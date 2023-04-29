@@ -52,9 +52,16 @@ command_tag() {
 }
 
 # Command Usage: test
-# Command Description: run test
+# Command Description: go test
 command_test() {
-  go test ./... -race -coverprofile=coverage.out -covermode=atomic
+  go test ./...
+}
+
+# Command Usage: coverage
+# Command Description: go test coverage
+command_coverage() {
+  go test -coverprofile=coverage.out -covermode=atomic ./...
+  go tool cover -func=coverage.out
 }
 
 check_msg() {
@@ -79,7 +86,7 @@ main() {
         exit 0
         ;;
 
-      tag|test)
+      tag|test|coverage)
         set_command "${1}"
         ;;
 
@@ -96,6 +103,7 @@ main() {
   case "${theCommand}" in
     run) command_run;;
     test) command_test;;
+    coverage) command_coverage;;
     clean) command_clean;;
     up) command_up;;
     down) command_down;;

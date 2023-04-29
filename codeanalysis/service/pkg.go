@@ -1,14 +1,21 @@
 package service
 
 import (
+	"github.com/dddplayer/core/codeanalysis/entity"
 	"github.com/dddplayer/core/codeanalysis/factory"
 )
 
-func Visit(path string, name func(name string)) error {
-	p, err := factory.NewPkg(path)
+func Visit(mainPkgPath, domain string, nodeCB entity.NodeCB, linkCB entity.LinkCB) error {
+	p, err := factory.NewPkg(mainPkgPath, domain)
 	if err != nil {
 		return err
 	}
-	name(p.Initial[0].PkgPath)
+
+	p.VisitFile(nodeCB, linkCB)
+	p.InterfaceImplements(linkCB)
+	if err := p.CallGraph(linkCB); err != nil {
+		return err
+	}
+
 	return nil
 }
