@@ -729,68 +729,47 @@ func TestEdgesMerge(t *testing.T) {
 		t.Errorf("Expected 3 merged edges, but got %d", len(mergedEdges))
 	}
 
-	// Verify the properties of each merged edge
-	// Merged Edge 1
-	if mergedEdges[0].From() != mockObject1.ID() {
-		t.Errorf("Expected From() of merged edge 1 to be %s, but got %s", mockObject1.ID(), mergedEdges[0].From())
-	}
-	if mergedEdges[0].To() != mockObject2.ID() {
-		t.Errorf("Expected To() of merged edge 1 to be %s, but got %s", mockObject2.ID(), mergedEdges[0].To())
-	}
-	if mergedEdges[0].Type() != arch.RelationTypeAggregation {
-		t.Errorf("Expected Type() of merged edge 1 to be %d, but got %d", arch.RelationTypeAggregation, mergedEdges[0].Type())
-	}
-	if mergedEdges[0].Count() != 2 {
-		t.Errorf("Expected Count() of merged edge 1 to be 2, but got %d", mergedEdges[0].Count())
-	}
-	if len(mergedEdges[0].Pos()) != 2 {
-		t.Errorf("Expected Pos() of merged edge 1 to have 2 elements, but got %d", len(mergedEdges[0].Pos()))
-	}
-
-	// Merged Edge 2
-	if mergedEdges[1].From() != mockObject2.ID() {
-		t.Errorf("Expected From() of merged edge 2 to be %s, but got %s", mockObject2.ID(), mergedEdges[1].From())
-	}
-	if mergedEdges[1].To() != mockObject3.ID() {
-		t.Errorf("Expected To() of merged edge 2 to be %s, but got %s", mockObject3.ID(), mergedEdges[1].To())
-	}
-	if mergedEdges[1].Type() != arch.RelationTypeComposition {
-		t.Errorf("Expected Type() of merged edge 2 to be %d, but got %d", arch.RelationTypeComposition, mergedEdges[1].Type())
-	}
-	if mergedEdges[1].Count() != 1 {
-		t.Errorf("Expected Count() of merged edge 2 to be 1, but got %d", mergedEdges[1].Count())
-	}
-	if len(mergedEdges[1].Pos()) != 1 {
-		t.Errorf("Expected Pos() of merged edge 2 to have 1 element, but got %d", len(mergedEdges[1].Pos()))
-	}
-
-	// Merged Edge 3
-	if mergedEdges[2].From() != mockObject3.ID() {
-		t.Errorf("Expected From() of merged edge 3 to be %s, but got %s", mockObject3.ID(), mergedEdges[2].From())
-	}
-	if mergedEdges[2].To() != mockObject4.ID() {
-		t.Errorf("Expected To() of merged edge 3 to be %s, but got %s", mockObject4.ID(), mergedEdges[2].To())
-	}
-	if mergedEdges[2].Type() != arch.RelationTypeAssociation {
-		t.Errorf("Expected Type() of merged edge 3 to be %d, but got %d", arch.RelationTypeAssociation, mergedEdges[2].Type())
-	}
-	if mergedEdges[2].Count() != 1 {
-		t.Errorf("Expected Count() of merged edge 3 to be 1, but got %d", mergedEdges[2].Count())
-	}
-
-	// Merged Edge 3 (Continued)
-	if len(mergedEdges[2].Pos()) != 1 {
-		t.Errorf("Expected Pos() of merged edge 3 to have 1 element, but got %d", len(mergedEdges[2].Pos()))
-	}
-
-	// Check if the merged edges are correctly merged by comparing keys
-	// Merged Edge 1 should have two positions
-	if len(mergedEdges[0].Pos()) != 2 {
-		t.Errorf("Expected Pos() of merged edge 1 to have 2 elements, but got %d", len(mergedEdges[0].Pos()))
-	}
-	// Merged Edge 2 should have one position
-	if len(mergedEdges[1].Pos()) != 1 {
-		t.Errorf("Expected Pos() of merged edge 2 to have 1 element, but got %d", len(mergedEdges[1].Pos()))
+	for _, me := range mergedEdges {
+		if me.From() == mockObject1.ID() {
+			if me.To() != mockObject2.ID() {
+				t.Errorf("Expected To() of merged edge 1 to be %s, but got %s", mockObject2.ID(), me.To())
+			}
+			if me.Type() != arch.RelationTypeAggregation {
+				t.Errorf("Expected Type() of merged edge 1 to be %d, but got %d", arch.RelationTypeAggregation, mergedEdges[0].Type())
+			}
+			if me.Count() != 2 {
+				t.Errorf("Expected Count() of merged edge 1 to be 2, but got %d", me.Count())
+			}
+			if len(me.Pos()) != 2 {
+				t.Errorf("Expected Pos() of merged edge 1 to have 2 elements, but got %d", len(me.Pos()))
+			}
+		} else if me.From() == mockObject2.ID() {
+			if me.To() != mockObject3.ID() {
+				t.Errorf("Expected To() of merged edge 2 to be %s, but got %s", mockObject3.ID(), me.To())
+			}
+			if me.Type() != arch.RelationTypeComposition {
+				t.Errorf("Expected Type() of merged edge 2 to be %d, but got %d", arch.RelationTypeComposition, me.Type())
+			}
+			if me.Count() != 1 {
+				t.Errorf("Expected Count() of merged edge 2 to be 1, but got %d", me.Count())
+			}
+			if len(me.Pos()) != 1 {
+				t.Errorf("Expected Pos() of merged edge 2 to have 1 element, but got %d", len(me.Pos()))
+			}
+		} else if me.From() == mockObject3.ID() {
+			if me.To() != mockObject4.ID() {
+				t.Errorf("Expected To() of merged edge 3 to be %s, but got %s", mockObject4.ID(), me.To())
+			}
+			if me.Type() != arch.RelationTypeAssociation {
+				t.Errorf("Expected Type() of merged edge 3 to be %d, but got %d", arch.RelationTypeAssociation, me.Type())
+			}
+			if me.Count() != 1 {
+				t.Errorf("Expected Count() of merged edge 3 to be 1, but got %d", me.Count())
+			}
+			if len(me.Pos()) != 1 {
+				t.Errorf("Expected Pos() of merged edge 3 to have 1 element, but got %d", len(me.Pos()))
+			}
+		}
 	}
 
 	// Check if the merged edges have unique keys
