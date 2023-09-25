@@ -1,5 +1,10 @@
 package arch
 
+type Options interface {
+	ShowAllRelations() bool
+	ShowStructEmbeddedRelations() bool
+}
+
 type DesignPattern string
 
 const (

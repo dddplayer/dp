@@ -130,7 +130,7 @@ func (arc *Arch) summaryDomainComponentRelations(g *Diagram) error {
 	return nil
 }
 
-func (arc *Arch) TacticGraph(detail bool) (arch.Diagram, error) {
+func (arc *Arch) TacticGraph(ops arch.Options) (arch.Diagram, error) {
 	if err := arc.BuildHexagon(); err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (arc *Arch) TacticGraph(detail bool) (arch.Diagram, error) {
 		return nil, err
 	}
 
-	if detail {
+	if ops.ShowAllRelations() {
 		if err := arc.domainComponentRelations(g); err != nil {
 			return nil, err
 		}
@@ -299,7 +299,7 @@ func (arc *Arch) buildOriginGraph() error {
 	return nil
 }
 
-func (arc *Arch) GeneralGraph(detail bool) (arch.Diagram, error) {
+func (arc *Arch) GeneralGraph(ops arch.Options) (arch.Diagram, error) {
 	if err := arc.BuildPlain(); err != nil {
 		return nil, err
 	}
@@ -309,7 +309,7 @@ func (arc *Arch) GeneralGraph(detail bool) (arch.Diagram, error) {
 		return nil, err
 	}
 
-	if detail {
+	if ops.ShowAllRelations() {
 		if err := arc.componentRelations(g); err != nil {
 			return nil, err
 		}

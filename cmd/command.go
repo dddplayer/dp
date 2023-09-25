@@ -10,16 +10,15 @@ import (
 
 func New() error {
 	topLevel := flag.NewFlagSet("dp", flag.ExitOnError)
-	mainPkg := topLevel.String("m", "", "main package")
-	domainModule := topLevel.String("d", "", "domain module")
 	topLevel.Usage = func() {
-		fmt.Println("Usage: dp [options] [subcommand]")
-		fmt.Println("  dp [-m Main package] [-d Domain module] [subcommand]")
-		cmd.DotUsage()
+		fmt.Println("Usage:\n  dp [command]")
+		fmt.Println("\nCommands:")
+		fmt.Println("  strategic:  generate domain strategic diagram")
+		fmt.Println("  tactic:     generate domain tactic diagram")
+		fmt.Println("  normal:     generate normal arch diagram")
 
-		fmt.Println("")
-		fmt.Println("Example:")
-		fmt.Println("  dp -m ./example -d github.com/dddplayer/markdown dot -s")
+		fmt.Println("\nExample:")
+		fmt.Println("  dp normal -m ~/github/dddplayer/dp -p github.com/dddplayer/dp/internal/domain")
 	}
 
 	err := topLevel.Parse(os.Args[1:])
@@ -28,16 +27,6 @@ func New() error {
 	}
 
 	if topLevel.Parsed() {
-		if *mainPkg == "" {
-			topLevel.Usage()
-			return errors.New("please specify the main package path")
-		}
-
-		if *domainModule == "" {
-			topLevel.Usage()
-			return errors.New("please specify a domain module name")
-		}
-
 		if len(topLevel.Args()) == 0 {
 			topLevel.Usage()
 			return errors.New("please specify a sub-command")
@@ -47,21 +36,31 @@ func New() error {
 		subCommand := topLevel.Args()[0]
 
 		switch subCommand {
-		case "dot":
-			dot := cmd.DotCmd()
-			err := dot.Parse(topLevel.Args()[1:])
+		case "normal":
+			normalCmd, err := cmd.NewNormalCmd(topLevel)
 			if err != nil {
-				dot.Usage()
+				return err
+			}
+			if err := normalCmd.Run(); err != nil {
 				return err
 			}
 
-			// 处理子命令1及参数
-			if dot.Parsed() {
-				err := cmd.DotRun(*mainPkg, *domainModule)
-				if err != nil {
-					dot.Usage()
-					return err
-				}
+		case "strategic":
+			strategicCmd, err := cmd.NewStrategicCmd(topLevel)
+			if err != nil {
+				return err
+			}
+			if err := strategicCmd.Run(); err != nil {
+				return err
+			}
+
+		case "tactic":
+			tacticCmd, err := cmd.NewTacticCmd(topLevel)
+			if err != nil {
+				return err
+			}
+			if err := tacticCmd.Run(); err != nil {
+				return err
 			}
 
 		default:
