@@ -372,7 +372,7 @@ func (golang *Go) CallGraph(linkCB code.LinkCB, mode code.CallGraphMode) error {
 		if strings.Contains(caller.String(), golang.DomainPkgPath) &&
 			strings.Contains(callee.String(), golang.DomainPkgPath) {
 
-			if caller.Func.Name() == "init" || callee.Func.Name() == "init" {
+			if ignore(caller.Func.Name()) || ignore(callee.Func.Name()) {
 				return nil
 			}
 
@@ -394,6 +394,13 @@ func (golang *Go) CallGraph(linkCB code.LinkCB, mode code.CallGraphMode) error {
 	})
 
 	return err
+}
+
+func ignore(funcName string) bool {
+	if funcName == "init" || strings.HasPrefix(funcName, "init#") || strings.HasPrefix(funcName, "init$") {
+		return true
+	}
+	return false
 }
 
 func (golang *Go) functionNode(node *callgraph.Node) *code.Node {
@@ -432,6 +439,12 @@ func (golang *Go) functionNode(node *callgraph.Node) *code.Node {
 				}
 				n.Meta = valueobject.NewMetaWithParent(n.Parent.Meta.Pkg(), funcName, n.Parent.Meta.Name())
 			}
+		} else if obj, ok := recv.Type().(*types.Named); ok {
+			objName = obj.Obj().Name()
+			n.Parent = &code.Node{
+				Meta: valueobject.NewMeta(pkgPath, objName),
+			}
+			n.Meta = valueobject.NewMetaWithParent(n.Parent.Meta.Pkg(), funcName, n.Parent.Meta.Name())
 		}
 	}
 

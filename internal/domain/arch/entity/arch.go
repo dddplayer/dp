@@ -313,6 +313,10 @@ func (arc *Arch) GeneralGraph(ops arch.Options) (arch.Diagram, error) {
 		if err := arc.componentRelations(g); err != nil {
 			return nil, err
 		}
+	} else if ops.ShowStructEmbeddedRelations() {
+		if err := arc.componentAssociationRelations(g); err != nil {
+			return nil, err
+		}
 	}
 
 	return g, nil
@@ -366,4 +370,32 @@ func (arc *Arch) componentRelations(g *Diagram) error {
 		}
 	}
 	return nil
+}
+
+func (arc *Arch) componentAssociationRelations(g *Diagram) error {
+	combinations := generateCombinations(g.Objects())
+	for _, comb := range combinations {
+		metas, err := arc.relationDigraph.RelationMetas(
+			comb.First.Identifier(),
+			comb.Second.Identifier(),
+		)
+		if err != nil {
+			return err
+		}
+		if err := g.AddRelations(comb.First.Identifier().ID(), comb.Second.Identifier().ID(), arc.filterAssociationMetas(metas)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (arc *Arch) filterAssociationMetas(metas []arch.RelationMeta) []arch.RelationMeta {
+	var filteredMetas []arch.RelationMeta
+	for _, meta := range metas {
+		switch meta.Type() {
+		case arch.RelationTypeAssociationOneOne, arch.RelationTypeAssociationOneMany, arch.RelationTypeAssociation:
+			filteredMetas = append(filteredMetas, meta)
+		}
+	}
+	return filteredMetas
 }

@@ -3,8 +3,7 @@ package code
 type RelationShip int
 
 const (
-	None RelationShip = iota + 1
-	OneOne
+	OneOne RelationShip = iota + 1
 	OneMany
 )
 

@@ -117,7 +117,7 @@ func extractExpr(expr ast.Expr) (sel, val string, ship code.RelationShip, err er
 
 func isBasicTypes(name string) bool {
 	return strings.Contains("bool string int int8 int16 int32 int64 uint uint8 uint16 uint32 uint64 uintptr "+
-		"byte rune float32 float64 complex64 complex128 any interface{}", name)
+		"byte rune float32 float64 complex64 complex128 any interface{} error", name)
 }
 
 func getPath(imports []*ast.ImportSpec, name string) string {

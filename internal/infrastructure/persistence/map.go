@@ -1,6 +1,7 @@
 package persistence
 
 import (
+	"fmt"
 	"github.com/dddplayer/dp/internal/domain/arch"
 )
 
@@ -17,7 +18,8 @@ func (kv *Relations) Insert(rel arch.Relation) error {
 func (kv *Relations) Walk(walker func(rel arch.Relation) error) {
 	for _, rel := range kv.relations {
 		if err := walker(rel); err != nil {
-			break
+			fmt.Println("relations Walk error: ", err)
+			continue
 		}
 	}
 }
