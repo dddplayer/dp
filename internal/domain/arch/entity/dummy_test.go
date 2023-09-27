@@ -890,3 +890,16 @@ func newMockElement(id int, children ...arch.Node) *MockElement {
 		ChildrenVal: children,
 	}
 }
+
+type MockOptions struct {
+	ShowAllRel            bool
+	ShowStructEmbeddedRel bool
+}
+
+func (o MockOptions) ShowAllRelations() bool {
+	return o.ShowAllRel
+}
+
+func (o MockOptions) ShowStructEmbeddedRelations() bool {
+	return o.ShowStructEmbeddedRel
+}

@@ -73,6 +73,10 @@ type MetaInfo interface {
 	HasParent() bool
 }
 
+type Param interface {
+	Name() string
+}
+
 type Position interface {
 	Filename() string
 	Offset() int

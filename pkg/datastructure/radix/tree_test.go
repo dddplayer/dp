@@ -1,6 +1,7 @@
 package radix
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -145,6 +146,64 @@ func TestTree_Insert(t *testing.T) {
 	tree.Insert("", 5)
 }
 
+func TestInsert_RightDepthSplit(t *testing.T) {
+	tree := &Tree{root: &node{}}
+
+	tree.Insert("abc", 1)
+	tree.Insert("abx", 2)
+
+	childNode := tree.root
+
+	var commonEdge *edge
+	for _, e := range childNode.suffixes {
+		if e.name == "ab" {
+			commonEdge = e
+			break
+		}
+	}
+
+	if commonEdge == nil {
+		t.Errorf("Expected a common edge with name 'c' in childNode.suffixes, but not found")
+	}
+
+	if commonEdge.end.val != nil {
+		t.Errorf("Expected end node value nil, but got %v", commonEdge.end.val)
+	}
+
+	if len(commonEdge.end.suffixes) != 2 {
+		t.Errorf("Expected empty suffixes for end node, but got %v", len(commonEdge.end.suffixes))
+	}
+}
+
+func TestInsert_RightDepthSplitCommonEdge(t *testing.T) {
+	tree := &Tree{root: &node{}}
+
+	tree.Insert("ab", 1)
+	tree.Insert("abx", 2)
+
+	childNode := tree.root
+
+	var commonEdge *edge
+	for _, e := range childNode.suffixes {
+		if e.name == "ab" {
+			commonEdge = e
+			break
+		}
+	}
+
+	if commonEdge == nil {
+		t.Errorf("Expected a common edge with name 'c' in childNode.suffixes, but not found")
+	}
+
+	if commonEdge.end.val != 1 {
+		t.Errorf("Expected end node value nil, but got %v", commonEdge.end.val)
+	}
+
+	if len(commonEdge.end.suffixes) != 1 {
+		t.Errorf("Expected empty suffixes for end node, but got %v", len(commonEdge.end.suffixes))
+	}
+}
+
 func TestGetFirstByte(t *testing.T) {
 	s1 := "apple"
 	s2 := "book"
@@ -217,5 +276,65 @@ func TestTree_Get(t *testing.T) {
 	v, ok = tree.Get("bar")
 	if v != "baz" || !ok {
 		t.Errorf("Expected (baz, true), but got (%v, %v)", v, ok)
+	}
+}
+
+func TestDelEdge(t *testing.T) {
+	rootNode := &node{}
+	edge1 := &edge{name: "Edge1", start: rootNode, end: nil}
+	edge2 := &edge{name: "Edge2", start: nil, end: rootNode}
+	rootNode.suffixes = append(rootNode.suffixes, edge1)
+	rootNode.delEdge(edge1)
+
+	if len(rootNode.suffixes) != 0 {
+		t.Errorf("Expected no edges in suffixes, but got %d", len(rootNode.suffixes))
+	}
+
+	if rootNode.delEdge(edge2); len(rootNode.suffixes) != 0 {
+		t.Errorf("Expected no change when deleting an edge not connected to the node")
+	}
+}
+
+func TestWalkNode(t *testing.T) {
+	tree := &Tree{root: &node{}}
+
+	tree.Insert("abc", 1)
+	tree.Insert("abx", 2)
+	tree.Insert("abcd", 3)
+	tree.Insert("abxy", 4)
+
+	var results []string
+
+	walker := func(prefix string, v any, ws WalkState) WalkStatus {
+		results = append(results, fmt.Sprintf("%s:%v:%v", prefix, v, ws))
+		return WalkContinue
+	}
+
+	walkNode("", tree.root, walker)
+
+	expectedResults := []string{
+		":<nil>:1",
+		"ab:<nil>:1",
+		"abc:1:1",
+		"abcd:3:1",
+		"abcd:3:2",
+		"abc:1:2",
+		"abx:2:1",
+		"abxy:4:1",
+		"abxy:4:2",
+		"abx:2:2",
+		"ab:<nil>:2",
+		":<nil>:2",
+	}
+
+	if len(results) != len(expectedResults) {
+		t.Errorf("Expected %d results, but got %d", len(expectedResults), len(results))
+		return
+	}
+
+	for i, expected := range expectedResults {
+		if results[i] != expected {
+			t.Errorf("Result %d: Expected '%s', but got '%s'", i, expected, results[i])
+		}
 	}
 }

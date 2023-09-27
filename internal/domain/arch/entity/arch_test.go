@@ -555,7 +555,9 @@ func TestTacticGraph(t *testing.T) {
 	}
 
 	// Call the StrategicGraph function
-	diagram, err := mockArch.TacticGraph(true)
+	diagram, err := mockArch.TacticGraph(&MockOptions{
+		ShowAllRel: true,
+	})
 
 	// Check for errors
 	if err != nil {

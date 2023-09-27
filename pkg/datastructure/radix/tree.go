@@ -43,7 +43,6 @@ func (t *Tree) Get(k string) (interface{}, bool) {
 	for {
 		if len(path) == 0 {
 			return n.val, true
-			break
 		}
 
 		e := n.getEdge(path)
@@ -205,36 +204,17 @@ func findEdgeWithSamePrefix(firstByte byte, es edges) *edge {
 // longestPrefix finds the length of the shared prefix
 // of two strings
 func longestPrefix(k1, k2 string) int {
-	max := len(k1)
-	if l := len(k2); l < max {
-		max = l
+	m := len(k1)
+	if l := len(k2); l < m {
+		m = l
 	}
 	var i int
-	for i = 0; i < max; i++ {
+	for i = 0; i < m; i++ {
 		if k1[i] != k2[i] {
 			break
 		}
 	}
 	return i
-}
-
-func (t *Tree) Print() {
-	recursivePrint(t.root)
-}
-
-func recursivePrint(n *node) {
-	printNode(n)
-	for _, e := range n.suffixes {
-		recursivePrint(e.end)
-	}
-}
-
-func printNode(n *node) {
-	prefix := ""
-	if n.prefix != nil {
-		prefix += n.prefix.name
-	}
-	fmt.Printf("node: prefix %s, value %s\n", prefix, n.val)
 }
 
 type WalkStatus int

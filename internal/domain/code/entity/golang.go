@@ -96,6 +96,15 @@ func (golang *Go) VisitFile(nodeCB code.NodeCB, linkCB code.LinkCB) {
 									node.Type = code.TypeGenStruct
 									nodeCB(node)
 
+									var params valueobject.Params
+									if typeSpec.TypeParams != nil {
+										for _, f := range typeSpec.TypeParams.List {
+											for _, name := range f.Names {
+												params = append(params, valueobject.NewParam(name.Name))
+											}
+										}
+									}
+
 									structType := typeSpec.Type.(*ast.StructType)
 									for _, field := range structType.Fields.List {
 										fieldPos := valueobject.AstPosition(pkg, field)
@@ -120,6 +129,10 @@ func (golang *Go) VisitFile(nodeCB code.NodeCB, linkCB code.LinkCB) {
 											pkg:  pkg,
 										}
 										exp.visit(func(path, name string, ship code.RelationShip) {
+											if params.Contains(name) {
+												return
+											}
+
 											if fieldNode == nil {
 												fieldNode = &code.Node{
 													Meta:   valueobject.NewMetaWithParent(node.Meta.Pkg(), name, node.Meta.Name()),
@@ -193,6 +206,24 @@ func (golang *Go) VisitFile(nodeCB code.NodeCB, linkCB code.LinkCB) {
 									switch star.X.(type) {
 									case *ast.Ident:
 										rcvName := star.X.(*ast.Ident).Name
+										rcvIdent := valueobject.NewMeta(pkg.ID, rcvName)
+										funcNode.Parent = &code.Node{
+											Meta: rcvIdent,
+											Type: code.TypeAny,
+											Pos:  valueobject.AstPosition(pkg, rcv),
+										}
+										funcNode.Meta = valueobject.NewMetaWithParent(rcvIdent.Pkg(), funcDecl.Name.Name, rcvIdent.Name())
+									case *ast.IndexListExpr:
+										//if funcDecl.Name.Name == "Signature" {
+										//	l := star.X.(*ast.IndexListExpr)
+										//
+										//	fmt.Println("Signature recv: ")
+										//	fmt.Printf("%#v\n", l.X)
+										//	for _, index := range l.Indices {
+										//		fmt.Printf("%#v\n", index)
+										//	}
+										//}
+										rcvName := star.X.(*ast.IndexListExpr).X.(*ast.Ident).Name
 										rcvIdent := valueobject.NewMeta(pkg.ID, rcvName)
 										funcNode.Parent = &code.Node{
 											Meta: rcvIdent,

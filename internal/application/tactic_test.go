@@ -39,7 +39,7 @@ func TestGeneralGraph(t *testing.T) {
 		idents:  []arch.ObjIdentifier{},
 	}
 
-	result, err := GeneralGraph(tempDir, path.Join(reflect.TypeOf(MockObjectRepository{}).PkgPath(), path.Base(tempDir)), mockRepo, mockRelRepo, false)
+	result, err := GeneralGraph(tempDir, path.Join(reflect.TypeOf(MockObjectRepository{}).PkgPath(), path.Base(tempDir)), mockRepo, mockRelRepo)
 
 	if err != nil {
 		t.Errorf("GeneralGraph() returned unexpected error:\nActual: %v", err)
@@ -198,7 +198,7 @@ func TestTacticGraph(t *testing.T) {
 		idents:  []arch.ObjIdentifier{},
 	}
 
-	result := TacticGraph(tempDir, path.Join(reflect.TypeOf(MockObjectRepository{}).PkgPath(), path.Base(tempDir)), mockRepo, mockRelRepo, false)
+	result, err := TacticGraph(tempDir, path.Join(reflect.TypeOf(MockObjectRepository{}).PkgPath(), path.Base(tempDir)), mockRepo, mockRelRepo)
 
 	// Verify the output matches the expected DOT directed
 	if strings.Contains(result, valueobject.GenerateShortURL("test_entity")) == false ||
