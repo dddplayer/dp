@@ -163,18 +163,6 @@ func (db *DotBuilder) buildTemplates() error {
 		valueobject.TmplSimpleNode, valueobject.TmplSimpleSubGraph, valueobject.TmplSimpleGraph,
 	}
 
-	//if db.archDiagram.NestingDepth() == 1 {
-	//	db.dot.Templates = []string{
-	//		valueobject.TmplEdge, valueobject.TmplSimpleNode,
-	//		valueobject.TmplSimpleSubGraph, valueobject.TmplSimpleGraph,
-	//	}
-	//} else {
-	//	db.dot.Templates = []string{
-	//		valueobject.TmplColumn, valueobject.TmplRow, valueobject.TmplNode,
-	//		valueobject.TmplEdge, valueobject.TmplSubGraph, valueobject.TmplGraph,
-	//	}
-	//}
-
 	return nil
 }
 

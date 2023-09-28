@@ -50,7 +50,7 @@ func (r *RadixTree) GetObjects(ids []arch.ObjIdentifier) ([]arch.Object, error) 
 	for _, id := range ids {
 		obj := r.Find(id)
 		if obj == nil {
-			return nil, fmt.Errorf("object %s not found", id)
+			return nil, fmt.Errorf("object %s not found", id.ID())
 		}
 		objs = append(objs, obj)
 	}

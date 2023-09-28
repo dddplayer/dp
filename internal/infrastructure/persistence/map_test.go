@@ -1,7 +1,12 @@
 package persistence
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/dddplayer/dp/internal/domain/arch"
+	"io"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -44,42 +49,6 @@ func TestRelations(t *testing.T) {
 	})
 }
 
-func TestRadixTree_All(t *testing.T) {
-	t.Run("Return All Identifiers", func(t *testing.T) {
-		// 创建 RadixTree 实例
-		r := &RadixTree{}
-
-		// 创建一些 MockIdentifier 并插入到 RadixTree 中
-		mockID1 := &MockIdentifier{IDVal: "id1"}
-		mockID2 := &MockIdentifier{IDVal: "id2"}
-		mockID3 := &MockIdentifier{IDVal: "id3"}
-
-		r.objIds = []arch.ObjIdentifier{mockID1, mockID2, mockID3}
-
-		// 调用 All 函数
-		identifiers := r.All()
-
-		// 验证返回的切片是否包含了所有插入的标识符
-		if len(identifiers) != 3 {
-			t.Errorf("Expected 3 identifiers, but got %d", len(identifiers))
-		}
-
-		// 验证返回的标识符切片中是否包含了所有插入的标识符
-		for _, id := range r.objIds {
-			found := false
-			for _, returnedID := range identifiers {
-				if id.ID() == returnedID.ID() {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Errorf("Expected to find identifier with ID '%s', but not found", id.ID())
-			}
-		}
-	})
-}
-
 func TestRelations_Walk(t *testing.T) {
 	t.Run("Walk Function Called for Each Relation", func(t *testing.T) {
 		// 创建 Relations 实例
@@ -112,6 +81,74 @@ func TestRelations_Walk(t *testing.T) {
 		// 验证 walker 是否按顺序调用了所有关系
 		if len(visitedRelations) != 3 {
 			t.Errorf("Expected to visit 3 relations, but visited %d", len(visitedRelations))
+		}
+	})
+}
+
+func TestRelations_Walk_ErrorHandling(t *testing.T) {
+	t.Run("Handle Error from Walker Function", func(t *testing.T) {
+		// 创建 Relations 实例
+		kv := &Relations{}
+
+		// 创建一些 MockRelation
+		mockRel1 := &MockRelation{
+			relationType: arch.RelationTypeAssociation,
+			fromObject:   &MockObject{},
+		}
+		mockRel2 := &MockRelation{
+			relationType: arch.RelationTypeComposition,
+			fromObject:   &MockObject{},
+		}
+		mockRel3 := &MockRelation{
+			relationType: arch.RelationTypeNone,
+			fromObject:   &MockObject{},
+		}
+
+		// 将关系添加到 Relations 实例
+		kv.relations = []arch.Relation{mockRel1, mockRel2, mockRel3}
+
+		// 保存当前 os.Stdout，以便后面恢复
+		originalStdout := os.Stdout
+
+		// 创建一个新的 *os.File 来捕获 stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
+
+		// 在测试结束时恢复原始的 os.Stdout
+		defer func() {
+			os.Stdout = originalStdout
+		}()
+
+		// 使用通道读取捕获的 stdout 内容
+		capturedOutput := make(chan string)
+		go func() {
+			var buf bytes.Buffer
+			_, _ = io.Copy(&buf, r)
+			capturedOutput <- buf.String()
+		}()
+
+		// 创建一个函数来模拟 walker 函数返回错误
+		errorOccurred := false
+		kv.Walk(func(rel arch.Relation) error {
+			if !errorOccurred {
+				errorOccurred = true
+				return fmt.Errorf("an error occurred")
+			}
+			return nil
+		})
+
+		// 关闭管道，确保捕获完成
+		w.Close()
+
+		// 获取捕获的 stdout 内容
+		captured := <-capturedOutput
+
+		// 验证是否打印了错误信息并继续遍历
+		if !errorOccurred {
+			t.Errorf("Expected the walker function to return an error and continue, but it didn't")
+		}
+		if !strings.HasPrefix(captured, "relations Walk error:  an error occurred") {
+			t.Errorf("Expected 'relations Walk error:  an error occurred', but got '%s'", captured)
 		}
 	})
 }

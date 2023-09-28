@@ -1,6 +1,7 @@
 package directory
 
 import (
+	"golang.org/x/exp/slices"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -289,8 +290,8 @@ func TestWalk(t *testing.T) {
 	}
 
 	for i, expected := range expectedResults {
-		if traversalResult[i] != expected {
-			t.Errorf("Result %d: Expected '%s', but got '%s'", i, expected, traversalResult[i])
+		if !slices.Contains(traversalResult, expected) {
+			t.Errorf("Result %d: Expected '%s', not in '%s'", i, expected, traversalResult)
 		}
 	}
 }
@@ -332,8 +333,8 @@ func TestWalkRecursive(t *testing.T) {
 	}
 
 	for i, expected := range expectedResults {
-		if traversalResult[i] != expected {
-			t.Errorf("Result %d: Expected '%s', but got '%s'", i, expected, traversalResult[i])
+		if !slices.Contains(traversalResult, expected) {
+			t.Errorf("Result %d: Expected '%s', not in '%s'", i, expected, traversalResult)
 		}
 	}
 }

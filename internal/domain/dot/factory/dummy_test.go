@@ -33,6 +33,7 @@ type DummyDotEdge struct {
 	ToVal   string
 	L       string
 	TT      string
+	T       arch.RelationType
 }
 
 func (e *DummyDotEdge) From() string                 { return e.FromVal }
@@ -42,7 +43,7 @@ func (e *DummyDotEdge) Tooltip() string              { return e.TT }
 func (e *DummyDotEdge) ArrowHead() dot.EdgeArrowHead { return dot.EdgeArrowHeadONormal }
 func (e *DummyDotEdge) Count() int                   { return 1 }
 func (e *DummyDotEdge) Pos() []arch.RelationPos      { return []arch.RelationPos{} }
-func (e *DummyDotEdge) Type() arch.RelationType      { return arch.RelationTypeNone }
+func (e *DummyDotEdge) Type() arch.RelationType      { return e.T }
 
 type DummyDotElement struct {
 	NameVal       string
@@ -143,3 +144,23 @@ func generateDummyDotGraph() *DummyDotGraph {
 	}
 	return graph
 }
+
+type MockPosition struct {
+	filename string
+	offset   int
+	line     int
+	column   int
+}
+
+func (p *MockPosition) Filename() string { return p.filename }
+func (p *MockPosition) Offset() int      { return p.offset }
+func (p *MockPosition) Line() int        { return p.line }
+func (p *MockPosition) Column() int      { return p.column }
+
+type MockRelationPos struct {
+	fromPos arch.Position
+	toPos   arch.Position
+}
+
+func (r *MockRelationPos) From() arch.Position { return r.fromPos }
+func (r *MockRelationPos) To() arch.Position   { return r.toPos }

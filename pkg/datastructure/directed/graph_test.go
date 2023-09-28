@@ -1,6 +1,7 @@
 package directed
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -57,5 +58,142 @@ func TestGraph(t *testing.T) {
 				t.Errorf("Unexpected edge value for node %v. Expected: %v, Actual: %v", test.node.Value, expectedValue, actualValue)
 			}
 		}
+	}
+}
+
+func TestNewNode(t *testing.T) {
+	// 创建一个新节点
+	key := "testKey"
+	value := "testValue"
+	node := NewNode(key, value)
+
+	// 验证节点的属性是否正确设置
+	if node.Key != key {
+		t.Errorf("Expected node.Key to be %s, but got %s", key, node.Key)
+	}
+
+	if node.Value != value {
+		t.Errorf("Expected node.Value to be %v, but got %v", value, node.Value)
+	}
+
+	// 验证节点的边列表是否为空
+	if len(node.Edges) != 0 {
+		t.Errorf("Expected an empty edge list, but got %d edges", len(node.Edges))
+	}
+}
+
+func TestGraph_AddNode(t *testing.T) {
+	// 创建一个新的图
+	graph := &Graph{Nodes: []*Node{}}
+
+	// 添加一个新节点
+	key1 := "node1"
+	value1 := "value1"
+	err := graph.AddNode(key1, value1)
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	// 验证节点是否被正确添加
+	if len(graph.Nodes) != 1 {
+		t.Errorf("Expected 1 node in the graph, but got %d", len(graph.Nodes))
+	}
+	if graph.Nodes[0].Key != key1 {
+		t.Errorf("Expected node key to be %s, but got %s", key1, graph.Nodes[0].Key)
+	}
+	if graph.Nodes[0].Value != value1 {
+		t.Errorf("Expected node value to be %v, but got %v", value1, graph.Nodes[0].Value)
+	}
+
+	// 尝试添加一个具有冲突键的节点
+	key2 := "node1" // 与上面的节点键冲突
+	value2 := "value2"
+	err = graph.AddNode(key2, value2)
+	if err == nil {
+		t.Error("Expected an error for adding a node with a conflicting key, but got no error")
+	} else if err.Error() != fmt.Sprintf("节点键冲突：%s", key2) {
+		t.Errorf("Expected error message '节点键冲突：%s', but got: %v", key2, err)
+	}
+
+	// 验证图中的节点数量没有增加
+	if len(graph.Nodes) != 1 {
+		t.Errorf("Expected 1 node in the graph, but got %d", len(graph.Nodes))
+	}
+}
+
+func TestGraph_FindNodeByKey(t *testing.T) {
+	// 创建一个新的图
+	graph := &Graph{Nodes: []*Node{}}
+
+	// 添加一些节点到图中
+	node1 := &Node{Key: "node1", Value: "value1", Edges: []*Edge{}}
+	node2 := &Node{Key: "node2", Value: "value2", Edges: []*Edge{}}
+	node3 := &Node{Key: "node3", Value: "value3", Edges: []*Edge{}}
+	graph.Nodes = append(graph.Nodes, node1, node2, node3)
+
+	// 查找一个存在的节点键
+	keyToFind := "node2"
+	foundNode := graph.FindNodeByKey(keyToFind)
+	if foundNode == nil {
+		t.Errorf("Expected to find a node with key %s, but got nil", keyToFind)
+	}
+	if foundNode.Key != keyToFind {
+		t.Errorf("Expected node key to be %s, but got %s", keyToFind, foundNode.Key)
+	}
+
+	// 查找一个不存在的节点键
+	keyToFind = "nonexistent"
+	foundNode = graph.FindNodeByKey(keyToFind)
+	if foundNode != nil {
+		t.Errorf("Expected to find nil for nonexistent key, but got a node with key %s", keyToFind)
+	}
+}
+
+func TestGraph_AddEdge(t *testing.T) {
+	// 创建一个新的图
+	graph := &Graph{Nodes: []*Node{}}
+
+	// 添加一些节点到图中
+	node1 := &Node{Key: "node1", Value: "value1", Edges: []*Edge{}}
+	node2 := &Node{Key: "node2", Value: "value2", Edges: []*Edge{}}
+	graph.Nodes = append(graph.Nodes, node1, node2)
+
+	// 添加一条边，确保它被正确添加到图中
+	from := "node1"
+	to := "node2"
+	edgeType := "edgeType"
+	edgeValue := "edgeValue"
+	err := graph.AddEdge(from, to, edgeType, edgeValue)
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	// 验证边是否被正确添加到起始节点
+	if len(node1.Edges) != 1 {
+		t.Errorf("Expected 1 edge for node1, but got %d", len(node1.Edges))
+	}
+	addedEdge := node1.Edges[0]
+	if addedEdge.From != node1 || addedEdge.To != node2 || addedEdge.Type != edgeType || addedEdge.Value != edgeValue {
+		t.Errorf("Added edge does not match the expected values")
+	}
+
+	// 尝试添加一条边，其中起始节点不存在
+	from = "nonexistent"
+	to = "node2"
+	err = graph.AddEdge(from, to, edgeType, edgeValue)
+	if err == nil {
+		t.Error("Expected an error for adding an edge with a nonexistent 'from' node, but got no error")
+	} else if err.Error() != fmt.Sprintf("from node: %s not found in Digraph", from) {
+		t.Errorf("Expected error message 'from node: %s not found in Digraph', but got: %v", from, err)
+	}
+
+	// 尝试添加一条边，其中目标节点不存在
+	from = "node1"
+	to = "nonexistent"
+	err = graph.AddEdge(from, to, edgeType, edgeValue)
+	if err == nil {
+		t.Error("Expected an error for adding an edge with a nonexistent 'to' node, but got no error")
+	} else if err.Error() != fmt.Sprintf("to node: %s not found in Digraph", to) {
+		t.Errorf("Expected error message 'to node: %s not found in Digraph', but got: %v", to, err)
 	}
 }
