@@ -2,6 +2,7 @@ package valueobject
 
 import (
 	"path"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -172,5 +173,194 @@ func TestDomainClassTypes(t *testing.T) {
 	}
 	if aggregate.Name != aggregateName {
 		t.Errorf("Aggregate's Name is not set correctly")
+	}
+}
+
+func TestNewDomainAttr(t *testing.T) {
+	// 创建一个模拟的属性对象和领域标识符
+	mockAttr := &Attr{
+		obj: NewObj(&obj{
+			id:  &ident{name: "TestAttr", pkg: "testpkg"},
+			pos: &pos{},
+		}),
+	}
+
+	domain := "example.com"
+
+	// 调用 NewDomainAttr 函数创建 DomainAttr
+	domainAttr := NewDomainAttr(mockAttr, domain)
+
+	// 验证 DomainAttr 对象的属性是否正确设置
+	if domainAttr.domainObj.obj != mockAttr.obj {
+		t.Errorf("Expected domainObj.obj to be the same as mockAttr.obj, but got different ones")
+	}
+
+	if domainAttr.domainObj.domain != domain {
+		t.Errorf("Expected domainObj.domain to be %s, but got %s", domain, domainAttr.domainObj.domain)
+	}
+}
+
+func TestNewDomainFunction(t *testing.T) {
+	// 创建一个模拟的函数对象和领域字符串
+	mockFunction := &Function{
+		obj: NewObj(&obj{
+			id:  &ident{name: "TestFunction", pkg: "testpkg"},
+			pos: &pos{},
+		}),
+	}
+
+	domain := "example.com"
+
+	// 调用 NewDomainFunction 函数创建 DomainFunction
+	domainFunction := NewDomainFunction(mockFunction, domain)
+
+	// 验证 DomainFunction 对象的属性是否正确设置
+	if domainFunction.domainObj.obj != mockFunction.obj {
+		t.Errorf("Expected domainObj.obj to be the same as mockFunction.obj, but got different ones")
+	}
+
+	if domainFunction.domainObj.domain != domain {
+		t.Errorf("Expected domainObj.domain to be %s, but got %s", domain, domainFunction.domainObj.domain)
+	}
+}
+
+func TestNewDomainInterface(t *testing.T) {
+	// 创建一个模拟的接口对象、领域字符串和方法列表
+	mockInterface := &Interface{
+		obj: NewObj(&obj{
+			id:  &ident{name: "TestInterface", pkg: "testpkg"},
+			pos: &pos{},
+		}),
+	}
+	domain := "example.com"
+	mockMethods := []*DomainFunction{
+		NewDomainFunction(&Function{
+			obj: NewObj(&obj{
+				id:  &ident{name: "Method1", pkg: "testpkg"},
+				pos: &pos{},
+			}),
+		}, domain),
+		NewDomainFunction(&Function{
+			obj: NewObj(&obj{
+				id:  &ident{name: "Method2", pkg: "testpkg"},
+				pos: &pos{},
+			}),
+		}, domain),
+	}
+
+	// 调用 NewDomainInterface 函数创建 DomainInterface
+	domainInterface := NewDomainInterface(mockInterface, domain, mockMethods)
+
+	// 验证 DomainInterface 对象的属性是否正确设置
+	if domainInterface.domainObj.obj != mockInterface.obj {
+		t.Errorf("Expected domainObj.obj to be the same as mockInterface.obj, but got different ones")
+	}
+
+	if domainInterface.domainObj.domain != domain {
+		t.Errorf("Expected domainObj.domain to be %s, but got %s", domain, domainInterface.domainObj.domain)
+	}
+
+	if !reflect.DeepEqual(domainInterface.Methods, mockMethods) {
+		t.Error("Expected Methods to be the same as mockMethods, but they are different")
+	}
+}
+
+func TestNewDomainGeneral(t *testing.T) {
+	// 创建一个模拟的通用对象和领域字符串
+	mockGeneral := &General{
+		obj: NewObj(&obj{
+			id:  &ident{name: "TestGeneral", pkg: "testpkg"},
+			pos: &pos{},
+		}),
+	}
+	domain := "example.com"
+
+	// 调用 NewDomainGeneral 函数创建 DomainGeneral
+	domainGeneral := NewDomainGeneral(mockGeneral, domain)
+
+	// 验证 DomainGeneral 对象的属性是否正确设置
+	if domainGeneral.domainObj.obj != mockGeneral.obj {
+		t.Errorf("Expected domainObj.obj to be the same as mockGeneral.obj, but got different ones")
+	}
+
+	if domainGeneral.domainObj.domain != domain {
+		t.Errorf("Expected domainObj.domain to be %s, but got %s", domain, domainGeneral.domainObj.domain)
+	}
+}
+
+func TestNewEntity(t *testing.T) {
+	// 创建一个模拟的领域类对象
+	mockClass := &DomainClass{
+		domainObj: &domainObj{
+			obj: &obj{
+				id:  &ident{name: "TestClass", pkg: "testpkg"},
+				pos: &pos{},
+			},
+			domain: "example.com",
+		},
+		Attributes: []*DomainAttr{},
+		Methods:    []*DomainFunction{},
+	}
+
+	// 调用 NewEntity 函数创建 Entity 对象
+	entity := NewEntity(mockClass)
+
+	// 验证 Entity 对象的属性是否正确设置
+	if entity.DomainClass != mockClass {
+		t.Errorf("Expected Entity's DomainClass to be the same as mockClass, but got different ones")
+	}
+}
+
+func TestNewAggregate(t *testing.T) {
+	// 创建一个模拟的 Entity 对象和名称
+	mockEntity := &Entity{
+		DomainClass: &DomainClass{
+			domainObj: &domainObj{
+				obj: &obj{
+					id:  &ident{name: "TestClass", pkg: "testpkg"},
+					pos: &pos{},
+				},
+				domain: "example.com",
+			},
+			Attributes: []*DomainAttr{},
+			Methods:    []*DomainFunction{},
+		},
+	}
+
+	aggregateName := "TestAggregate"
+
+	// 调用 NewAggregate 函数创建 Aggregate 对象
+	aggregate := NewAggregate(mockEntity, aggregateName)
+
+	// 验证 Aggregate 对象的属性是否正确设置
+	if aggregate.Entity != mockEntity {
+		t.Errorf("Expected Aggregate's Entity to be the same as mockEntity, but got different ones")
+	}
+
+	if aggregate.Name != aggregateName {
+		t.Errorf("Expected Aggregate's Name to be %s, but got %s", aggregateName, aggregate.Name)
+	}
+}
+
+func TestNewValueObject(t *testing.T) {
+	// 创建一个模拟的 DomainClass 对象
+	mockDomainClass := &DomainClass{
+		domainObj: &domainObj{
+			obj: &obj{
+				id:  &ident{name: "TestClass", pkg: "testpkg"},
+				pos: &pos{},
+			},
+			domain: "example.com",
+		},
+		Attributes: []*DomainAttr{},
+		Methods:    []*DomainFunction{},
+	}
+
+	// 调用 NewValueObject 函数创建 ValueObject 对象
+	valueObject := NewValueObject(mockDomainClass)
+
+	// 验证 ValueObject 对象的属性是否正确设置
+	if valueObject.DomainClass != mockDomainClass {
+		t.Errorf("Expected ValueObject's DomainClass to be the same as mockDomainClass, but got different ones")
 	}
 }
