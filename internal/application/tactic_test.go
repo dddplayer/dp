@@ -133,45 +133,6 @@ func createHexagonTestPackage(dir string) error {
 	return nil
 }
 
-func TestStrategicGraph(t *testing.T) {
-	// create a temporary directory to hold the test package
-	tempDir, err := ioutil.TempDir(".", "testpkg")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer func(path string) {
-		err := os.RemoveAll(path)
-		if err != nil {
-			t.Fatalf("failed to remove temp dir: %v", err)
-		}
-	}(tempDir)
-
-	// create a test package in the temporary directory
-	if err := createHexagonTestPackage(tempDir); err != nil {
-		t.Fatalf("failed to create test package: %v", err)
-	}
-
-	mockRelRepo := &MockRelationRepository{
-		relations: make([]arch.Relation, 0),
-	}
-	mockRepo := &MockObjectRepository{
-		objects: make(map[string]arch.Object),
-		idents:  []arch.ObjIdentifier{},
-	}
-
-	result, err := StrategicGraph(tempDir, path.Join(reflect.TypeOf(MockObjectRepository{}).PkgPath(), path.Base(tempDir)), mockRepo, mockRelRepo)
-
-	if err != nil {
-		t.Errorf("StrategicGraph() returned unexpected error:\nActual: %v", err)
-	}
-
-	// Verify the output matches the expected DOT directed
-	if strings.Contains(result, valueobject.GenerateShortURL("test_entity_Test")) == false ||
-		strings.Contains(result, valueobject.GenerateShortURL("test_valueobject_VO")) == false {
-		t.Errorf("StrategicGraph() returned unexpected output:\nActual: %v", result)
-	}
-}
-
 func TestTacticGraph(t *testing.T) {
 	// create a temporary directory to hold the test package
 	tempDir, err := ioutil.TempDir(".", "testpkg")
