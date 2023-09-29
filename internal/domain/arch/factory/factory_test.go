@@ -85,3 +85,37 @@ func TestNewArch(t *testing.T) {
 		t.Errorf("Expected RelRepo to match, but it didn't")
 	}
 }
+
+func TestNewArch_ErrorOnNilRepo(t *testing.T) {
+	mockObjectRepo := &MockObjectRepository{}
+	mockRelationRepo := &MockRelationRepository{}
+
+	// Create a new Arch with nil objRepo
+	arc, err := NewArch("testScope", nil, mockRelationRepo)
+
+	// Check that arch is nil
+	if arc != nil {
+		t.Errorf("Expected arch to be nil, but got %v", arc)
+	}
+
+	// Check that err is not nil and contains the expected error message
+	expectedErrMsg := "objRepo cannot be nil"
+	if err == nil || err.Error() != expectedErrMsg {
+		t.Errorf("Expected error message: '%s', but got error: %v", expectedErrMsg, err)
+	}
+
+	// Create a new Arch with nil relRepo
+	arc, err = NewArch("testScope", mockObjectRepo, nil)
+
+	// Check that arch is nil
+	if arc != nil {
+		t.Errorf("Expected arch to be nil, but got %v", arc)
+	}
+
+	// Check that err is not nil and contains the expected error message
+	expectedErrMsg = "relRepo cannot be nil"
+	if err == nil || err.Error() != expectedErrMsg {
+		t.Errorf("Expected error message: '%s', but got error: %v", expectedErrMsg, err)
+	}
+}
+
