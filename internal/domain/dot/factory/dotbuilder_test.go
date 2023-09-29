@@ -9,6 +9,7 @@ import (
 	"github.com/dddplayer/dp/internal/domain/dot/valueobject"
 	"path"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -241,5 +242,191 @@ func TestDotBuilder_buildEdges(t *testing.T) {
 	}
 	if mockDiagram.Edges()[0].To() != expectedEdges[0].To {
 		t.Errorf("Generated edges do not match the expected results.\nExpected: %+v\nGot: %+v", expectedEdges, dotBuilder.dot.Edges)
+	}
+}
+
+func TestDotBuilder_buildPortMap(t *testing.T) {
+	// 创建一个虚拟的 entity.SubGraph 对象
+	mockSubGraph := &dotEntity.SubGraph{
+		// 初始化模拟的节点和表格数据
+		Nodes: []*dotEntity.Node{
+			{
+				ID: "NodeA",
+				Table: &dotEntity.Table{
+					Rows: []*dotEntity.Row{
+						{
+							Data: []*dotEntity.Data{
+								{Port: "Port1"},
+								{Port: "Port2"},
+								// 添加更多模拟的数据
+							},
+						},
+					},
+				},
+			},
+			// 添加更多模拟的节点
+		},
+	}
+
+	// 创建一个虚拟的 DotBuilder 实例
+	dotBuilder := &DotBuilder{
+		archDiagram: nil, // 不需要关注这个字段
+		portMap:     make(map[string]string),
+		dot:         &dotEntity.Dot{},
+	}
+
+	// 调用 buildPortMap 函数
+	dotBuilder.buildPortMap(mockSubGraph)
+
+	// 验证生成的 portMap 是否符合预期
+	expectedPortMap := map[string]string{
+		"Port1": "NodeA",
+		"Port2": "NodeA",
+		// 添加更多期望的映射
+	}
+
+	// 验证生成的 portMap 是否与预期的结果匹配
+	if !reflect.DeepEqual(dotBuilder.portMap, expectedPortMap) {
+		t.Errorf("Generated portMap does not match the expected results.\nExpected: %+v\nGot: %+v", expectedPortMap, dotBuilder.portMap)
+	}
+}
+
+func TestDotBuilder_buildGraph(t *testing.T) {
+	// 创建一个虚拟的 arch.SubDiagram 对象
+	mockSubDiagram := generateDummyDotGraph() // 根据您的数据结构创建虚拟对象
+
+	mockDiagram, err := archEntity.NewDiagram("test", arch.PlainDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	// 创建一个虚拟的 DotBuilder 实例
+	dotBuilder := &DotBuilder{
+		archDiagram: mockDiagram,
+		portMap:     make(map[string]string),
+		dot:         &dotEntity.Dot{},
+	}
+
+	// 创建一个虚拟的 entity.SubGraph 作为父子图
+	parentSubGraph := &dotEntity.SubGraph{
+		// 初始化父子图的属性
+		Name:      "ParentSubGraph",
+		Label:     "ParentSubGraph",
+		Nodes:     []*dotEntity.Node{},
+		SubGraphs: []*dotEntity.SubGraph{},
+	}
+
+	// 调用 buildGraph 函数
+	if err := dotBuilder.buildGraph(mockSubDiagram, parentSubGraph); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+		return
+	}
+
+	// 验证生成的子图是否符合预期
+	expectedSubGraph := &dotEntity.SubGraph{
+		// 初始化预期的子图属性
+		Name:  "dcPXfIp",   // 根据您的数据结构设置名称
+		Label: "TestGraph", // 根据您的数据结构设置标签
+		Nodes: []*dotEntity.Node{
+			{ID: "dc0Zpf6", Name: "Node1", BgColor: "", Table: nil},
+			{ID: "dc4oA8n", Name: "Node2", BgColor: "", Table: nil},
+		},
+		SubGraphs: []*dotEntity.SubGraph{
+			// 根据您的数据结构设置预期的子图
+		},
+	}
+
+	// 验证生成的子图是否与预期的结果匹配
+	if !reflect.DeepEqual(parentSubGraph.SubGraphs[0], expectedSubGraph) {
+		t.Errorf("Generated subgraph does not match the expected results.\nExpected: %+v\nGot: %+v", expectedSubGraph, parentSubGraph.SubGraphs[0])
+	}
+}
+
+func TestDotBuilder_buildSubGraph(t *testing.T) {
+	mockDiagram, err := archEntity.NewDiagram("TestDiagram", arch.PlainDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+		return
+	}
+	if err := mockDiagram.AddStringTo("mockGroup", mockDiagram.Name(), arch.RelationTypeAggregationRoot); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+		return
+	}
+
+	// 在 DotBuilder 实例中设置 isDeepMode 为 true
+	dotBuilder := &DotBuilder{
+		archDiagram: mockDiagram,
+		portMap:     make(map[string]string),
+		dot:         &dotEntity.Dot{},
+	}
+
+	// 调用 buildSubGraph 函数
+	if err := dotBuilder.buildSubGraph(); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+		return
+	}
+
+	// 验证生成的子图是否符合预期
+	expectedSubGraph1 := &dotEntity.SubGraph{
+		Name:      "dbWlszi",     // 请根据您的数据结构设置名称
+		Label:     "TestDiagram", // 请根据您的数据结构设置标签
+		Nodes:     []*dotEntity.Node{{}},
+		SubGraphs: []*dotEntity.SubGraph{{}},
+	}
+
+	sg := dotBuilder.dot.SubGraphs[0]
+	if sg.Name != expectedSubGraph1.Name {
+		t.Errorf("Generated subgraph does not match the expected results.\nExpected: %+v\nGot: %+v", expectedSubGraph1, sg)
+	}
+	if sg.Label != expectedSubGraph1.Label {
+		t.Errorf("Generated subgraph does not match the expected results.\nExpected: %+v\nGot: %+v", expectedSubGraph1, sg)
+	}
+	if len(sg.SubGraphs) != len(expectedSubGraph1.SubGraphs) {
+		t.Errorf("Generated subgraph does not match the expected results.\nExpected: %+v\nGot: %+v", expectedSubGraph1, sg)
+	}
+	if len(sg.Nodes) != len(expectedSubGraph1.Nodes) {
+		t.Errorf("Generated subgraph does not match the expected results.\nExpected: %+v\nGot: %+v", expectedSubGraph1, sg)
+	}
+}
+
+func TestDotBuilder_Build(t *testing.T) {
+	// 创建虚拟的 arch.Diagram 对象
+	mockDiagram, err := archEntity.NewDiagram("TestDiagram", arch.PlainDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+		return
+	}
+	if err := mockDiagram.AddStringTo("mockGroup", mockDiagram.Name(), arch.RelationTypeAggregationRoot); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+		return
+	}
+
+	// 创建一个虚拟的 DotBuilder 实例
+	dotBuilder := &DotBuilder{
+		archDiagram: mockDiagram,
+		portMap:     make(map[string]string),
+		dot:         &dotEntity.Dot{},
+	}
+
+	// 调用 Build 函数
+	d, err := dotBuilder.Build()
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+		return
+	}
+
+	// 验证生成的 Dot 实例是否符合预期
+	expectedDot := &dotEntity.Dot{
+		Name:      "TestDiagram",                                            // 根据您的数据结构设置名称
+		Label:     "\n\nTestDiagram\nDomain Model\n\nPowered by DDD Player", // 根据您的数据结构设置标签
+		SubGraphs: []*dotEntity.SubGraph{{}},                                // 根据您的数据结构设置子图
+		Edges:     []*dotEntity.Edge{{}},                                    // 根据您的数据结构设置边
+	}
+
+	if d.Name != expectedDot.Name {
+		t.Errorf("Generated dot does not match the expected results.\nExpected: %+v\nGot: %+v", expectedDot, d)
+	}
+	if !strings.HasPrefix(d.Label, expectedDot.Label) {
+		t.Errorf("Generated dot does not match the expected results.\nExpected: %+v\nGot: %+v", expectedDot, d)
 	}
 }
