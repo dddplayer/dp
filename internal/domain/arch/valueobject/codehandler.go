@@ -12,6 +12,11 @@ type CodeHandler struct {
 	Scope   string
 	ObjRepo repository.ObjectRepository
 	RelRepo repository.RelationRepository
+	errors  []error
+}
+
+func (ch *CodeHandler) pushError(err error) {
+	ch.errors = append(ch.errors, err)
 }
 
 func (ch *CodeHandler) NodeHandler(node *code.Node) {
@@ -25,14 +30,16 @@ func (ch *CodeHandler) NodeHandler(node *code.Node) {
 		ch.handleClass(id, pos)
 	case code.TypeGenStructField, code.TypeGenStructEmbeddedField:
 		if node.Parent == nil {
-			fmt.Println("struct field no parent error")
+			ch.pushError(fmt.Errorf("struct field:%s without parent", id.name))
+			return
 		}
 		ch.handleAttribute(id, pos, newIdentifier(node.Parent.Meta))
 	case code.TypeGenInterface:
 		ch.handleInterface(id, pos)
 	case code.TypeGenInterfaceMethod:
 		if node.Parent == nil {
-			fmt.Println("interface method no parent error")
+			ch.pushError(fmt.Errorf("interface method:%s without parent", id.name))
+			return
 		}
 		ch.handleInterfaceMethod(id, pos, newIdentifier(node.Parent.Meta))
 	case code.TypeFunc:
@@ -54,14 +61,15 @@ func (ch *CodeHandler) handleClass(id *ident, pos *pos) {
 	}
 
 	if err := ch.ObjRepo.Insert(c); err != nil {
-		fmt.Println(err)
+		ch.pushError(err)
 	}
 }
 
 func (ch *CodeHandler) handleAttribute(id *ident, pos *pos, pid *ident) {
 	attr := &Attr{&obj{id: id, pos: pos}}
 	if err := ch.ObjRepo.Insert(attr); err != nil {
-		fmt.Println(err)
+		ch.pushError(err)
+		return
 	}
 	if obj := ch.ObjRepo.Find(pid); obj != nil {
 		if o, ok := obj.(*Class); ok {
@@ -73,7 +81,7 @@ func (ch *CodeHandler) handleAttribute(id *ident, pos *pos, pid *ident) {
 func (ch *CodeHandler) handleGenObj(id *ident, pos *pos) {
 	genObj := &General{&obj{id: id, pos: pos}}
 	if err := ch.ObjRepo.Insert(genObj); err != nil {
-		fmt.Println(err)
+		ch.pushError(err)
 	}
 }
 
@@ -83,7 +91,8 @@ func (ch *CodeHandler) handleFunc(id *ident, pos *pos, pid *ident) {
 		Receiver: pid,
 	}
 	if err := ch.ObjRepo.Insert(genObj); err != nil {
-		fmt.Println(err)
+		ch.pushError(err)
+		return
 	}
 
 	if pid != nil {
@@ -104,7 +113,7 @@ func (ch *CodeHandler) handleInterface(id *ident, pos *pos) {
 		methods: []*ident{},
 	}
 	if err := ch.ObjRepo.Insert(i); err != nil {
-		fmt.Println(err)
+		ch.pushError(err)
 	}
 }
 
@@ -116,7 +125,8 @@ func (ch *CodeHandler) handleInterfaceMethod(id *ident, pos *pos, pid *ident) {
 		},
 	}
 	if err := ch.ObjRepo.Insert(im); err != nil {
-		fmt.Println(err)
+		ch.pushError(err)
+		return
 	}
 	if obj := ch.ObjRepo.Find(pid); obj != nil {
 		if i, ok := obj.(*Interface); ok {
@@ -161,6 +171,6 @@ func (ch *CodeHandler) LinkHandler(link *code.Link) {
 	}
 
 	if err := ch.RelRepo.Insert(r); err != nil {
-		fmt.Println(err)
+		ch.pushError(err)
 	}
 }

@@ -69,6 +69,9 @@ func (r *mockObjRepository) Find(id arch.ObjIdentifier) arch.Object {
 }
 
 func (r *mockObjRepository) Insert(obj arch.Object) error {
+	if r.data[obj.Identifier()] != nil {
+		return fmt.Errorf("object %v already exists", obj.Identifier())
+	}
 	r.data[obj.Identifier()] = obj
 	return nil
 }
@@ -107,6 +110,10 @@ type mockRelationRepository struct {
 	relations []arch.Relation
 }
 
+func (r *mockRelationRepository) Clear() {
+	r.relations = []arch.Relation{}
+}
+
 func (r *mockRelationRepository) Find(id arch.Identifier) arch.Relation {
 	for _, rel := range r.relations {
 		if rel.From().Identifier().ID() == id.ID() {
@@ -117,6 +124,9 @@ func (r *mockRelationRepository) Find(id arch.Identifier) arch.Relation {
 }
 
 func (r *mockRelationRepository) Insert(rel arch.Relation) error {
+	if r.Find(rel.From().Identifier()) != nil {
+		return fmt.Errorf("relation %v already exists", rel.From().Identifier())
+	}
 	r.relations = append(r.relations, rel)
 	return nil
 }
