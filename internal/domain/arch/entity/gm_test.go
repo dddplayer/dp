@@ -1,8 +1,10 @@
 package entity
 
 import (
+	"fmt"
 	"github.com/dddplayer/dp/internal/domain/arch"
 	"github.com/dddplayer/dp/internal/domain/arch/valueobject"
+	"path"
 	"testing"
 )
 
@@ -121,6 +123,88 @@ func TestAddClass(t *testing.T) {
 	}
 }
 
+func TestAddClass_Attr_ErrorCase(t *testing.T) {
+	// Create a mock class with attributes and methods
+	mockObject := newMockObject(0)
+	mockAttr := newMockObjectAttribute(0)
+	mockMethod := newMockObjectMethod(0)
+
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	_ = mockRepo.Insert(mockObject)
+	_ = mockRepo.Insert(mockAttr)
+	_ = mockRepo.Insert(mockMethod)
+
+	mockClass := newMockClass(mockObject, mockAttr, mockMethod)
+
+	g, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	if err := g.AddObjTo(mockClass, g.Name(), arch.RelationTypeAggregation); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	model := &GeneralModel{
+		repo: mockRepo,
+	}
+
+	// Test case: Object not found in repository
+	_ = g.AddObjTo(mockAttr, mockClass.Identifier().ID(), arch.RelationTypeBehavior)
+	err = model.addClass(g, mockClass)
+	if err == nil {
+		t.Errorf("Expected an error when object not found, but got nil")
+	}
+	expectedErrMsg := fmt.Sprintf("节点键冲突：%s", mockAttr.Identifier().ID())
+	if err.Error() != expectedErrMsg {
+		t.Errorf("Expected error message '%s', but got '%v'", expectedErrMsg, err)
+	}
+}
+
+func TestAddClass_Method_ErrorCase(t *testing.T) {
+	// Create a mock class with attributes and methods
+	mockObject := newMockObject(0)
+	mockAttr := newMockObjectAttribute(0)
+	mockMethod := newMockObjectMethod(0)
+
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	_ = mockRepo.Insert(mockObject)
+	_ = mockRepo.Insert(mockAttr)
+	_ = mockRepo.Insert(mockMethod)
+
+	mockClass := newMockClass(mockObject, mockAttr, mockMethod)
+
+	g, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	if err := g.AddObjTo(mockClass, g.Name(), arch.RelationTypeAggregation); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	model := &GeneralModel{
+		repo: mockRepo,
+	}
+
+	// Test case: Object not found in repository
+	_ = g.AddObjTo(mockMethod, mockClass.Identifier().ID(), arch.RelationTypeAttribution)
+	err = model.addClass(g, mockClass)
+	if err == nil {
+		t.Errorf("Expected an error when object not found, but got nil")
+	}
+	expectedErrMsg := fmt.Sprintf("节点键冲突：%s", mockMethod.Identifier().ID())
+	if err.Error() != expectedErrMsg {
+		t.Errorf("Expected error message '%s', but got '%v'", expectedErrMsg, err)
+	}
+}
+
 func TestBuildAttributeComponents(t *testing.T) {
 	mockGroup := newMockGroup("testGroup", 0)
 	mockRepo := &MockObjectRepository{
@@ -181,7 +265,82 @@ func TestBuildAttributeComponents(t *testing.T) {
 	if len(edges) != expectedEdgeCount {
 		t.Errorf("Expected %d edges in the diagram, but got %d", expectedEdgeCount, len(edges))
 	}
+}
 
+func TestBuildAttributeComponents_MissingObjectClassComponent(t *testing.T) {
+	mockGroup := newMockGroup("testGroup", 0)
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	// Not inserting any objects into the repository
+
+	model := &GeneralModel{
+		repo: mockRepo,
+	}
+
+	mockDiagram, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	// Test case: Missing class object
+	err = model.buildAttributeComponents(mockDiagram, mockGroup, valueobject.ClassComponent)
+	if err == nil {
+		t.Errorf("Expected an error for missing class object, but got nil")
+	}
+	// Ensure that err is nil because class component is ignored
+
+	// Test case: Missing interface object
+	err = model.buildAttributeComponents(mockDiagram, mockGroup, valueobject.InterfaceComponent)
+	if err == nil {
+		t.Errorf("Expected an error for missing interface object, but got nil")
+	}
+}
+
+func TestBuildAttributeComponents_DuplicateClassInterface(t *testing.T) {
+	mockGroup := newMockGroup("testGroup", 0)
+
+	claObj := newMockObject(0)
+	claAttrObj := newMockObjectAttribute(0)
+	claMethodObj := newMockObjectMethod(0)
+	mockClass := newMockClass(claObj, claAttrObj, claMethodObj)
+
+	intfObj := newMockObjectInterface(0)
+	intfMethodObj := newMockObjectInterfaceMethod(0)
+	mockItf := newMockInterface(intfObj, []*MockObject{intfMethodObj})
+
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range mockGroup.MockObjects {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	model := &GeneralModel{
+		repo: mockRepo,
+	}
+
+	mockDiagram, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	if err := mockDiagram.AddStringTo(mockGroup.Name(), mockDiagram.Name(), arch.RelationTypeAggregationRoot); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	_ = mockDiagram.AddObjTo(claMethodObj, mockClass.Identifier().ID(), arch.RelationTypeAttribution)
+	err = model.buildAttributeComponents(mockDiagram, mockGroup, valueobject.ClassComponent)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	_ = mockDiagram.AddObjTo(intfMethodObj, mockItf.Identifier().ID(), arch.RelationTypeBehavior)
+	err = model.buildAttributeComponents(mockDiagram, mockGroup, valueobject.InterfaceComponent)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
 }
 
 func TestBuildAbstractComponent(t *testing.T) {
@@ -246,6 +405,44 @@ func TestBuildAbstractComponent(t *testing.T) {
 	}
 }
 
+func TestBuildAbstractComponent_Error(t *testing.T) {
+	mockGroup := newMockGroup("testGroup", 0)
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range mockGroup.MockObjects {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	model := &GeneralModel{
+		repo: mockRepo,
+	}
+
+	mockDiagram, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	if err := mockDiagram.AddStringTo(mockGroup.Name(), mockDiagram.Name(), arch.RelationTypeAggregationRoot); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	componentKey := path.Join(mockGroup.Name(), string(valueobject.GeneralComponent))
+	_ = mockDiagram.AddStringTo(componentKey, mockGroup.Name(), arch.RelationTypeAbstraction)
+	err = model.buildAbstractComponent(mockDiagram, mockGroup, valueobject.GeneralComponent)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	funcObj := newMockObjectFunction(0)
+	mockFunc := newMockFunction(funcObj)
+	_ = mockDiagram.AddObjTo(mockFunc, componentKey, arch.RelationTypeAggregation)
+	err = model.buildAbstractComponent(mockDiagram, mockGroup, valueobject.FunctionComponent)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+}
+
 func TestBuildComponents(t *testing.T) {
 	mockGroup := newMockGroup("testGroup", 0)
 	mockRepo := &MockObjectRepository{
@@ -290,6 +487,63 @@ func TestBuildComponents(t *testing.T) {
 	expectedEdgeCount := 3 // Attribute and method relationships will be ignored
 	if len(edges) != expectedEdgeCount {
 		t.Errorf("Expected %d edges in the diagram, but got %d", expectedEdgeCount, len(edges))
+	}
+}
+
+func TestBuildComponents_Error(t *testing.T) {
+	mockGroup := newMockGroup("testGroup", 0)
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range mockGroup.MockObjects {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	model := &GeneralModel{
+		repo: mockRepo,
+	}
+
+	mockDiagram, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	if err := mockDiagram.AddStringTo(mockGroup.Name(), mockDiagram.Name(), arch.RelationTypeAggregationRoot); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	componentKey := path.Join(mockGroup.Name(), string(valueobject.GeneralComponent))
+	_ = mockDiagram.AddStringTo(componentKey, mockGroup.Name(), arch.RelationTypeAbstraction)
+	err = model.buildComponents(mockDiagram, mockGroup)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	funcObj := newMockObjectFunction(0)
+	mockFunc := newMockFunction(funcObj)
+	_ = mockDiagram.AddObjTo(mockFunc, componentKey, arch.RelationTypeAggregation)
+	err = model.buildComponents(mockDiagram, mockGroup)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	claObj := newMockObject(0)
+	claAttrObj := newMockObjectAttribute(0)
+	claMethodObj := newMockObjectMethod(0)
+	mockClass := newMockClass(claObj, claAttrObj, claMethodObj)
+	_ = mockDiagram.AddObjTo(claMethodObj, mockClass.Identifier().ID(), arch.RelationTypeAttribution)
+	err = model.buildComponents(mockDiagram, mockGroup)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	intfObj := newMockObjectInterface(0)
+	intfMethodObj := newMockObjectInterfaceMethod(0)
+	mockItf := newMockInterface(intfObj, []*MockObject{intfMethodObj})
+	_ = mockDiagram.AddObjTo(intfMethodObj, mockItf.Identifier().ID(), arch.RelationTypeBehavior)
+	err = model.buildComponents(mockDiagram, mockGroup)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
 	}
 }
 
@@ -338,6 +592,50 @@ func TestAddGroupToDiagram(t *testing.T) {
 	}
 }
 
+func TestAddGroupToDiagram_Error(t *testing.T) {
+	mockGroup := newTwoLevelMockGroup()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range mockGroup.AllMockObjects() {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	model := &GeneralModel{
+		repo: mockRepo,
+	}
+
+	mockDiagram, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	subGroup2 := newMockGroup("subgroup2", 2)
+	componentKey := path.Join(subGroup2.Name(), string(valueobject.GeneralComponent))
+	_ = mockDiagram.AddStringTo(componentKey, subGroup2.Name(), arch.RelationTypeAbstraction)
+	err = model.addGroupToDiagram(mockDiagram, mockGroup, mockDiagram.Name())
+
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	componentKey2 := path.Join(mockGroup.Name(), string(valueobject.GeneralComponent))
+	_ = mockDiagram.AddStringTo(componentKey2, mockGroup.Name(), arch.RelationTypeAbstraction)
+	err = model.addGroupToDiagram(mockDiagram, mockGroup, mockDiagram.Name())
+
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	_ = mockDiagram.AddStringTo(mockGroup.Name(), mockDiagram.Name(), arch.RelationTypeAggregationRoot)
+	err = model.addGroupToDiagram(mockDiagram, mockGroup, mockDiagram.Name())
+
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+}
+
 func TestAddRootGroupToDiagram(t *testing.T) {
 	mockGroup := newTwoLevelMockGroup()
 	mockRepo := &MockObjectRepository{
@@ -382,6 +680,44 @@ func TestAddRootGroupToDiagram(t *testing.T) {
 	if len(edges) != expectedEdgeCount {
 		t.Errorf("Expected %d edges in the diagram, but got %d", expectedEdgeCount, len(edges))
 	}
+}
+
+func TestAddRootGroupToDiagram_Error(t *testing.T) {
+	mockGroup := newTwoLevelMockGroup()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range mockGroup.AllMockObjects() {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	model := &GeneralModel{
+		repo:      mockRepo,
+		rootGroup: mockGroup,
+	}
+
+	mockDiagram, err := NewDiagram("root", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	subGroup2 := newMockGroup("subgroup2", 2)
+	_ = mockDiagram.AddStringTo(subGroup2.Name(), mockDiagram.Name(), arch.RelationTypeAggregationRoot)
+	err = model.addRootGroupToDiagram(mockDiagram)
+
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	componentKey := path.Join(mockGroup.Name(), string(valueobject.GeneralComponent))
+	_ = mockDiagram.AddStringTo(componentKey, mockGroup.Name(), arch.RelationTypeAbstraction)
+	err = model.addRootGroupToDiagram(mockDiagram)
+
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
 }
 
 func TestGeneralModel_Grouping(t *testing.T) {
