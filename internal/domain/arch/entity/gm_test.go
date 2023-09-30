@@ -512,16 +512,10 @@ func TestBuildComponents_Error(t *testing.T) {
 		t.Errorf("Expected no error, but got: %v", err)
 	}
 
-	componentKey := path.Join(mockGroup.Name(), string(valueobject.GeneralComponent))
-	_ = mockDiagram.AddStringTo(componentKey, mockGroup.Name(), arch.RelationTypeAbstraction)
-	err = model.buildComponents(mockDiagram, mockGroup)
-	if err == nil {
-		t.Errorf("Expected an error, but got nil")
-	}
-
-	funcObj := newMockObjectFunction(0)
-	mockFunc := newMockFunction(funcObj)
-	_ = mockDiagram.AddObjTo(mockFunc, componentKey, arch.RelationTypeAggregation)
+	intfObj := newMockObjectInterface(0)
+	intfMethodObj := newMockObjectInterfaceMethod(0)
+	mockItf := newMockInterface(intfObj, []*MockObject{intfMethodObj})
+	_ = mockDiagram.AddObjTo(intfMethodObj, mockItf.Identifier().ID(), arch.RelationTypeBehavior)
 	err = model.buildComponents(mockDiagram, mockGroup)
 	if err == nil {
 		t.Errorf("Expected an error, but got nil")
@@ -537,10 +531,17 @@ func TestBuildComponents_Error(t *testing.T) {
 		t.Errorf("Expected an error, but got nil")
 	}
 
-	intfObj := newMockObjectInterface(0)
-	intfMethodObj := newMockObjectInterfaceMethod(0)
-	mockItf := newMockInterface(intfObj, []*MockObject{intfMethodObj})
-	_ = mockDiagram.AddObjTo(intfMethodObj, mockItf.Identifier().ID(), arch.RelationTypeBehavior)
+	componentKey := path.Join(mockGroup.Name(), string(valueobject.GeneralComponent))
+	
+	funcObj := newMockObjectFunction(0)
+	mockFunc := newMockFunction(funcObj)
+	_ = mockDiagram.AddObjTo(mockFunc, componentKey, arch.RelationTypeAggregation)
+	err = model.buildComponents(mockDiagram, mockGroup)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	_ = mockDiagram.AddStringTo(componentKey, mockGroup.Name(), arch.RelationTypeAbstraction)
 	err = model.buildComponents(mockDiagram, mockGroup)
 	if err == nil {
 		t.Errorf("Expected an error, but got nil")
