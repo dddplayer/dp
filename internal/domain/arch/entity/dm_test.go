@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/dddplayer/dp/internal/domain/arch"
 	"github.com/dddplayer/dp/internal/domain/arch/valueobject"
+	"path"
 	"testing"
 )
 
@@ -106,6 +107,46 @@ func TestBuildAbstractDomainComponent(t *testing.T) {
 	expectedEdgeCount := 3 // Attribute and method relationships will be ignored
 	if len(edges) != expectedEdgeCount {
 		t.Errorf("Expected %d edges in the diagram, but got %d", expectedEdgeCount, len(edges))
+	}
+}
+
+func TestBuildAbstractDomainComponent_Error(t *testing.T) {
+	mockGroup := newMockDomainGroup("testGroup", 0)
+	mockDirectory := newMockEmptyDirectory()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range mockGroup.MockObjects {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	mockDiagram, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	if err := mockDiagram.AddStringTo(mockGroup.Name(), mockDiagram.Name(), arch.RelationTypeAggregationRoot); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	componentKey := path.Join(mockGroup.Name(), string(valueobject.GeneralComponent))
+	_ = mockDiagram.AddStringTo(componentKey, mockGroup.Name(), arch.RelationTypeAbstraction)
+	err = model.buildAbstractComponent(mockDiagram, mockGroup, mockGroup.Name(), valueobject.GeneralComponent)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	funcObj := newMockObjectFunction(0)
+	df := newMockDomainFunction("testdomain", funcObj)
+	_ = mockDiagram.AddObjTo(df, componentKey, arch.RelationTypeAggregation)
+	err = model.buildAbstractComponent(mockDiagram, mockGroup, mockGroup.Name(), valueobject.FunctionComponent)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
 	}
 }
 
