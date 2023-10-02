@@ -46,6 +46,21 @@ func TestDomainModel_DomainName(t *testing.T) {
 	}
 }
 
+func TestDomainModel_DomainName_Error(t *testing.T) {
+	mockRepo := &MockObjectRepository{}
+	mockDirectory := newMockInvalidEmptyDirectory()
+
+	dm, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	_, err = dm.DomainName()
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+}
+
 func TestBuildAbstractDomainComponent(t *testing.T) {
 	mockGroup := newMockDomainGroup("testGroup", 0)
 	mockDirectory := newMockEmptyDirectory()
@@ -521,6 +536,46 @@ func TestAddDomainClass(t *testing.T) {
 	}
 }
 
+func TestAddDomainClass_Error(t *testing.T) {
+	mockObject := newMockObject(0)
+	mockAttr := newMockObjectAttribute(0)
+	mockMethod := newMockObjectMethod(0)
+
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	_ = mockRepo.Insert(mockObject)
+	_ = mockRepo.Insert(mockAttr)
+	_ = mockRepo.Insert(mockMethod)
+
+	domain := "testdomain"
+	mockClass := newMockDomainClass(domain, mockObject, mockAttr, mockMethod)
+
+	g, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	if err := g.AddObjTo(mockClass, g.Name(), arch.RelationTypeAggregation); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	mockDirectory := newMockEmptyDirectory()
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	df := valueobject.NewDomainFunction(valueobject.NewFunction(mockMethod, mockObject.Identifier()), domain)
+	_ = g.AddObjTo(df, mockClass.Identifier().ID(), arch.RelationTypeAggregation)
+
+	err = model.addDomainClass(g, mockClass)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+}
+
 func TestDomainModel_AddAggregateToDiagram(t *testing.T) {
 	mockGroup := newMockDomainGroup("testGroup", 0)
 	mockDirectory := newMockEmptyDirectory()
@@ -567,6 +622,50 @@ func TestDomainModel_AddAggregateToDiagram(t *testing.T) {
 	expectedEdgeCount := 1 // Attribute and method relationships will be ignored
 	if len(edges) != expectedEdgeCount {
 		t.Errorf("Expected %d edges in the diagram, but got %d", expectedEdgeCount, len(edges))
+	}
+}
+
+func TestDomainModel_AddAggregateToDiagram_Error(t *testing.T) {
+	mockGroup := newMockDomainGroup("testGroup", 0)
+	mockDirectory := newMockEmptyDirectory()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range mockGroup.MockObjects {
+		_ = mockRepo.Insert(mockObj)
+	}
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	g, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	domain := "testdomain"
+
+	mockAggregate := newMockAggregate(domain, 0)
+	mockAggregateGroup := newMockAggregateGroup(domain)
+
+	claObj := newMockObject(0)
+	claAttrObj := newMockObjectAttribute(0)
+	claMethodObj := newMockObjectMethod(0)
+	df := valueobject.NewDomainFunction(valueobject.NewFunction(claMethodObj, claObj.Identifier()), domain)
+	mockClass := newMockDomainClass(domain, claObj, claAttrObj, claMethodObj)
+
+	_ = g.AddObjTo(df, mockClass.Identifier().ID(), arch.RelationTypeAggregation)
+
+	err = model.addAggregateToDiagram(g, mockAggregateGroup, mockAggregate)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	_ = g.AddObjTo(mockAggregate, g.Name(), arch.RelationTypeAggregationRoot)
+	err = model.addAggregateToDiagram(g, mockAggregateGroup, mockAggregate)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
 	}
 }
 
@@ -648,6 +747,33 @@ func TestDomainModel_AddVOToNode(t *testing.T) {
 	}
 }
 
+func TestDomainModel_AddVOToNode_Error(t *testing.T) {
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	mockDirectory := newMockEmptyDirectory()
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	g, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	domain := "testdomain"
+	mockVO := newMockValueObject(domain, 0)
+
+	_ = g.AddObjTo(mockVO, g.Name(), arch.RelationTypeAggregation)
+
+	err = model.addVOToNode(g, g.Name(), mockVO)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+}
+
 func TestDomainModel_AddEntityToNode(t *testing.T) {
 	mockRepo := &MockObjectRepository{
 		objects: make(map[string]arch.Object),
@@ -682,6 +808,33 @@ func TestDomainModel_AddEntityToNode(t *testing.T) {
 	expectedEdgeCount := 0 // Attribute and method relationships will be ignored
 	if len(edges) != expectedEdgeCount {
 		t.Errorf("Expected %d edges in the diagram, but got %d", expectedEdgeCount, len(edges))
+	}
+}
+
+func TestDomainModel_AddEntityToNode_Error(t *testing.T) {
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	mockDirectory := newMockEmptyDirectory()
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	g, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	domain := "testdomain"
+	mockEntity := newMockEntity(domain, 0)
+
+	_ = g.AddObjTo(mockEntity, g.Name(), arch.RelationTypeAggregation)
+
+	err = model.addEntityToNode(g, g.Name(), mockEntity)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
 	}
 }
 
@@ -766,6 +919,26 @@ func TestDomainModel_GetClass(t *testing.T) {
 	}
 	if !classNames[claObj1.Identifier().ID()] {
 		t.Errorf("Expected class '%s' in the result, but it's missing", claObj1.Identifier().ID())
+	}
+}
+
+func TestDomainModel_GetClass_Error(t *testing.T) {
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	mockDirectory := newMockEmptyDirectory()
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	claObj0 := newMockObject(0)
+
+	objIds := []arch.ObjIdentifier{claObj0.Identifier()}
+	_, err = model.getClass(objIds)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
 	}
 }
 
@@ -883,6 +1056,33 @@ func TestDomainModel_ProcessClasses(t *testing.T) {
 	}
 }
 
+func TestDomainModel_ProcessClasses_Error(t *testing.T) {
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	mockDirectory := newMockEmptyDirectory()
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	domain := "TestDomain"
+	aggregateGroup := newMockAggregateGroup(domain)
+	model.aggregates = append(model.aggregates, aggregateGroup)
+
+	claObj0 := newMockObject(0)
+	claAttrObj0 := newMockObjectAttribute(0)
+	claMethodObj0 := newMockObjectMethod(0)
+	cla0 := newMockClass(claObj0, claAttrObj0, claMethodObj0)
+
+	dir := "root/aggregate0/testdir"
+	err = model.processClasses([]arch.ObjIdentifier{cla0.Identifier()}, valueobject.EntityComponent, dir)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+}
+
 func TestDomainModel_ProcessObjects(t *testing.T) {
 	mockRepo := &MockObjectRepository{
 		objects: make(map[string]arch.Object),
@@ -931,6 +1131,33 @@ func TestDomainModel_ProcessObjects(t *testing.T) {
 	entityGroup := entityGroups[0]
 	if entityGroup.(valueobject.DomainGroup).Domain() != domain {
 		t.Errorf("Expected EntityGroup with name 'TestDomain', but got '%s'", entityGroup.Name())
+	}
+}
+
+func TestDomainModel_ProcessObjects_Error(t *testing.T) {
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	mockDirectory := newMockEmptyDirectory()
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	domain := "TestDomain"
+	aggregateGroup := newMockAggregateGroup(domain)
+	model.aggregates = append(model.aggregates, aggregateGroup)
+
+	claObj0 := newMockObject(0)
+	claAttrObj0 := newMockObjectAttribute(0)
+	claMethodObj0 := newMockObjectMethod(0)
+	cla0 := newMockClass(claObj0, claAttrObj0, claMethodObj0)
+
+	dir := "root/aggregate0/testdir"
+	err = model.processObjects([]arch.ObjIdentifier{cla0.Identifier()}, valueobject.EntityComponent, dir)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
 	}
 }
 

@@ -310,6 +310,19 @@ func (m *MockGroup) Interfaces() []*valueobject.Interface {
 	return m.InterfacesFunc()
 }
 
+func newMockInvalidEmptyDirectory() *Directory {
+	mockDirectory := &Directory{
+		root: &directory.TreeNode{
+			Name: "root",
+			Children: map[string]*directory.TreeNode{
+				string(arch.HexagonDirectoryCmd): {},
+				string(arch.HexagonDirectoryPkg): {},
+			},
+		},
+	}
+	return mockDirectory
+}
+
 func newMockEmptyDirectory() *Directory {
 	mockDirectory := &Directory{
 		root: &directory.TreeNode{
