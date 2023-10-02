@@ -1206,6 +1206,25 @@ func TestGeneralModel_StrategicGrouping(t *testing.T) {
 	}
 }
 
+func TestGeneralModel_StrategicGrouping_Error(t *testing.T) {
+	mockDirectory := newMockInvalidEmptyDirectory()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	err = model.StrategicGrouping()
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+}
+
 func TestGeneralModel_TacticGrouping(t *testing.T) {
 	mockDirectory, objs := newMockDirectoryWithDomainObjs()
 	mockRepo := &MockObjectRepository{
@@ -1248,5 +1267,23 @@ func TestGeneralModel_TacticGrouping(t *testing.T) {
 				t.Errorf("Expected DomainGroup, but got %T", sg)
 			}
 		}
+	}
+}
+
+func TestGeneralModel_TacticGrouping_Error(t *testing.T) {
+	mockDirectory := newMockInvalidEmptyDirectory()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	err = model.TacticGrouping()
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
 	}
 }
