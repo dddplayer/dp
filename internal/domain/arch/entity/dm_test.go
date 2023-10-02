@@ -214,6 +214,63 @@ func TestBuildDMComponents(t *testing.T) {
 	}
 }
 
+func TestBuildDMComponents_Error(t *testing.T) {
+	mockGroup := newMockDomainGroup("testGroup", 0)
+	mockDirectory := newMockEmptyDirectory()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range mockGroup.MockObjects {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	model, err := NewDomainModel(mockRepo, mockDirectory)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	mockDiagram, err := NewDiagram("test", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	if err := mockDiagram.AddStringTo(mockGroup.Name(), mockDiagram.Name(), arch.RelationTypeAggregationRoot); err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	domain := "testdomain"
+	claObj := newMockObject(0)
+	claAttrObj := newMockObjectAttribute(0)
+	claMethodObj := newMockObjectMethod(0)
+	df := valueobject.NewDomainFunction(valueobject.NewFunction(claMethodObj, claObj.Identifier()), domain)
+	mockClass := newMockDomainClass(domain, claObj, claAttrObj, claMethodObj)
+
+	_ = mockDiagram.AddObjTo(df, mockClass.Identifier().ID(), arch.RelationTypeBehavior)
+	err = model.buildComponents(mockDiagram, mockGroup, mockGroup.Name(), valueobject.ClassComponent)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+	err = model.buildComponents(mockDiagram, mockGroup, mockGroup.Name(), valueobject.ClassComponent)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+
+	intfObj := newMockObjectInterface(0)
+	intfMethodObj := newMockObjectInterfaceMethod(0)
+	dif := valueobject.NewDomainFunction(valueobject.NewFunction(intfMethodObj, intfObj.Identifier()), domain)
+	mockItf := newMockDomainInterface(domain, intfObj, []*MockObject{intfMethodObj})
+
+	_ = mockDiagram.AddObjTo(dif, mockItf.Identifier().ID(), arch.RelationTypeBehavior)
+	err = model.buildComponents(mockDiagram, mockGroup, mockGroup.Name(), valueobject.InterfaceComponent)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+	err = model.buildComponents(mockDiagram, mockGroup, mockGroup.Name(), valueobject.InterfaceComponent)
+	if err == nil {
+		t.Errorf("Expected an error, but got nil")
+	}
+}
+
 func TestBuildDomainComponents(t *testing.T) {
 	mockGroup := newMockDomainGroup("testGroup", 0)
 	mockDirectory := newMockEmptyDirectory()
