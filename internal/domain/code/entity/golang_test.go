@@ -369,3 +369,95 @@ func main() {
 		}
 	}
 }
+
+func TestCallGraph(t *testing.T) {
+	// create a temporary directory for test files
+	tmpDir, err := ioutil.TempDir(".", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// 写入临时文件
+	sourceCode := `
+package main
+import "fmt"
+
+type Greeter interface {
+	Greet()
+}
+
+type Person struct {
+	Scope string
+	Age  int
+}
+
+func (p *Person) Greet() {
+	fmt.Println(p.Scope, p.Age)
+}
+
+type Foo interface {
+	Bar() string
+}
+
+type fooImpl struct {}
+
+func (f *fooImpl) Bar() string {
+	return "Hello, world!"
+}
+
+func main() {
+	p := &Person{
+		Scope: "John",
+		Age:  18,
+	}
+	p.Greet()
+
+	fi := &fooImpl{}
+	fmt.Println(fi.Bar())
+}
+`
+	tmpFile := filepath.Join(tmpDir, "main.go")
+	if err := ioutil.WriteFile(tmpFile, []byte(sourceCode), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// load the test package
+	goInstance := &Go{
+		Path:          tmpDir,
+		DomainPkgPath: "test",
+	}
+	if err := goInstance.Load(); err != nil {
+		t.Fatal(err)
+	}
+
+	// 测试不同的调用图类型
+	testCases := []struct {
+		algo              code.CallGraphType
+		expectedGraphType string
+	}{
+		{code.CallGraphTypeStatic, "*callgraph.Graph"},
+		{code.CallGraphTypeCha, "*callgraph.Graph"},
+		{code.CallGraphTypeRta, "*callgraph.Graph"},
+		{code.CallGraphTypePointer, "*callgraph.Graph"},
+	}
+
+	for _, testCase := range testCases {
+		graph, err := goInstance.callGraph(testCase.algo)
+
+		if err != nil {
+			t.Errorf("Error for %s: %v", testCase.expectedGraphType, err)
+			continue
+		}
+
+		// 检查返回的图类型是否正确
+		if graph != nil {
+			graphType := fmt.Sprintf("%T", graph)
+			expectedType := fmt.Sprintf("%s", testCase.expectedGraphType)
+
+			if graphType != expectedType {
+				t.Errorf("Expected %s, got %s", expectedType, graphType)
+			}
+		}
+	}
+}
