@@ -214,15 +214,6 @@ func (golang *Go) VisitFile(nodeCB code.NodeCB, linkCB code.LinkCB) {
 										}
 										funcNode.Meta = valueobject.NewMetaWithParent(rcvIdent.Pkg(), funcDecl.Name.Name, rcvIdent.Name())
 									case *ast.IndexListExpr:
-										//if funcDecl.Name.Name == "Signature" {
-										//	l := star.X.(*ast.IndexListExpr)
-										//
-										//	fmt.Println("Signature recv: ")
-										//	fmt.Printf("%#v\n", l.X)
-										//	for _, index := range l.Indices {
-										//		fmt.Printf("%#v\n", index)
-										//	}
-										//}
 										rcvName := star.X.(*ast.IndexListExpr).X.(*ast.Ident).Name
 										rcvIdent := valueobject.NewMeta(pkg.ID, rcvName)
 										funcNode.Parent = &code.Node{

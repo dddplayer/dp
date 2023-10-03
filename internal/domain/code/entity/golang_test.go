@@ -100,12 +100,39 @@ func (p *Person) Greet() {
 	p.SayHello()
 }
 
+type IL []string
+
+func (il IL) SayHello() {
+	fmt.Println("Hello, I'm", il)
+}
+
+type TS[S string] struct {
+	A S
+	B string
+}
+
+type SSS string
+type SA []string
+
+func SayHi() {
+	fmt.Println("Hi")
+}
+
+func init() {
+	SayHi()
+}
+
 func main() {
 	p := &Person{
 		Scope: "John",
 		Age:  18,
 	}
 	p.SayHello()
+	il := []string{"a", "b"}
+	il.SayHello()
+
+	ts := &TS[string]{B: "cde"}
+	fmt.Println(ts.A, ts.B)
 }
 `
 	tmpFile := filepath.Join(tmpDir, "main.go")
@@ -141,21 +168,26 @@ func main() {
 	})
 
 	// 检查结果
-	if len(nodeList) != 11 {
+	if len(nodeList) != 19 {
 		t.Errorf("unexpected number of nodes: %d", len(nodeList))
 	}
-	expectedNodes := []string{"Greeter", "SuperMan", "Person", "main", "Scope", "Age", "SayHello", "SayHello2", "Greet"}
+	expectedNodes := []string{"Greeter", "SuperMan", "Person",
+		"main", "Scope", "Age", "SayHello", "SayHello2", "Greet",
+		"TS", "A", "B", "SSS", "SA", "SayHi", "IL",
+	}
 	for _, n := range nodeList {
 		if !slices.Contains(expectedNodes, n.Meta.Name()) {
 			t.Errorf("unexpected node: %s", n.Meta.Name())
 		}
 	}
-	if len(linkList) != 8 {
+	if len(linkList) != 11 {
 		t.Errorf("unexpected number of links: %d", len(linkList))
 	}
 	expectedLinks := []string{"from Person to Person", "from Greeter to Greet",
 		"from SuperMan to Person", "from Person to Scope", "from Person to Age",
-		"from Person to SayHello", "from Person to SayHello2", "from Person to Greet"}
+		"from Person to SayHello", "from Person to SayHello2", "from Person to Greet",
+		"from TS to A", "from TS to B", "from IL to SayHello",
+	}
 	for _, l := range linkList {
 		if !slices.Contains(expectedLinks, fmt.Sprintf("from %s to %s", l.From.Meta.Name(), l.To.Meta.Name())) {
 			t.Errorf("unexpected link: from %s to %s", l.From.Meta.Name(), l.To.Meta.Name())
@@ -164,7 +196,7 @@ func main() {
 }
 
 func TestPkg_CallGraph(t *testing.T) {
-	tmpdir, err := ioutil.TempDir(".", "test")
+	tmpdir, err := ioutil.TempDir(".", "example")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,6 +204,7 @@ func TestPkg_CallGraph(t *testing.T) {
 
 	// create a test package with two functions calling each other
 	src := `package main
+import "fmt"
 
 func foo() {
 	bar()
@@ -181,18 +214,40 @@ func bar() {
 	foo()
 }
 
+type Person struct {}
+
+func (p Person) SayHello2() {
+	fmt.Println("Hello2")
+}
+
+func (p *Person) SayHello() {
+	fmt.Println("Hello")
+}
+
+func (p *Person) SayHello3(f func(string)) {
+	f("2")
+}
+
 func main() {
 	foo()
 	bar()
+	p := &Person{}
+	p.SayHello()
+	p.SayHello2()
+	p.SayHello3(func(word string) {
+		fmt.Println(word)
+	})
 }
 `
-	err = ioutil.WriteFile(filepath.Join(tmpdir, "test.go"), []byte(src), 0644)
+	err = ioutil.WriteFile(filepath.Join(tmpdir, "main.go"), []byte(src), 0644)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// load the test package
-	p := &Go{Path: tmpdir}
+	p := &Go{Path: tmpdir,
+		DomainPkgPath: "example",
+		mainPkgPath:   "example"}
 	if err := p.Load(); err != nil {
 		t.Fatal(err)
 	}
@@ -207,14 +262,15 @@ func main() {
 	}
 
 	// verify the call directed contains two nodes and one link
-	if len(links) != 4 {
-		t.Fatalf("expected 1 link, got %d", len(links))
+	if len(links) != 7 {
+		t.Fatalf("expected 7 link, got %d", len(links))
 	}
 
-	expectedLinks := []string{"from main to foo", "from main to bar", "from foo to bar", "from bar to foo"}
+	expectedLinks := []string{"from main to foo", "from main to bar", "from foo to bar",
+		"from bar to foo", "from main to SayHello", "from main to SayHello2", "from main to SayHello3"}
 	for _, l := range links {
 		if !slices.Contains(expectedLinks, fmt.Sprintf("from %s to %s", l.From.Meta.Name(), l.To.Meta.Name())) {
-			t.Errorf("unexpected link: from %v to %v", l.From, l.To)
+			t.Errorf("unexpected link: from %v to %v", l.From.Meta.Name(), l.To.Meta.Name())
 		}
 	}
 }
