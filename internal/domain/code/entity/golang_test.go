@@ -100,15 +100,25 @@ func (p *Person) Greet() {
 	p.SayHello()
 }
 
+type HelloFunc func(name string)
+
 type IL []string
 
 func (il IL) SayHello() {
 	fmt.Println("Hello, I'm", il)
 }
 
-type TS[S string] struct {
+func (il IL) SayHello2(f HelloFunc) {
+	f("cde")
+}
+
+type TS[T, S string] struct {
 	A S
 	B string
+}
+
+func (ts *TS[T, S]) SayHello() {
+	fmt.Println("Hello, I'm", ts.B)
 }
 
 type SSS string
@@ -128,11 +138,14 @@ func main() {
 		Age:  18,
 	}
 	p.SayHello()
-	il := []string{"a", "b"}
+	il := IL{}
 	il.SayHello()
+	il.SayHello2(func(s string) {
+		fmt.Println(s)
+	})
 
-	ts := &TS[string]{B: "cde"}
-	fmt.Println(ts.A, ts.B)
+	ts := &TS[string, string]{B: "cde"}
+	ts.SayHello()
 }
 `
 	tmpFile := filepath.Join(tmpDir, "main.go")
@@ -168,25 +181,26 @@ func main() {
 	})
 
 	// 检查结果
-	if len(nodeList) != 19 {
+	if len(nodeList) != 22 {
 		t.Errorf("unexpected number of nodes: %d", len(nodeList))
 	}
 	expectedNodes := []string{"Greeter", "SuperMan", "Person",
 		"main", "Scope", "Age", "SayHello", "SayHello2", "Greet",
-		"TS", "A", "B", "SSS", "SA", "SayHi", "IL",
+		"TS", "A", "B", "SSS", "SA", "SayHi", "IL", "HelloFunc",
 	}
 	for _, n := range nodeList {
 		if !slices.Contains(expectedNodes, n.Meta.Name()) {
 			t.Errorf("unexpected node: %s", n.Meta.Name())
 		}
 	}
-	if len(linkList) != 11 {
+	if len(linkList) != 13 {
 		t.Errorf("unexpected number of links: %d", len(linkList))
 	}
 	expectedLinks := []string{"from Person to Person", "from Greeter to Greet",
 		"from SuperMan to Person", "from Person to Scope", "from Person to Age",
 		"from Person to SayHello", "from Person to SayHello2", "from Person to Greet",
-		"from TS to A", "from TS to B", "from IL to SayHello",
+		"from TS to A", "from TS to B", "from IL to SayHello", "from IL to SayHello2",
+		"from TS to SayHello",
 	}
 	for _, l := range linkList {
 		if !slices.Contains(expectedLinks, fmt.Sprintf("from %s to %s", l.From.Meta.Name(), l.To.Meta.Name())) {
