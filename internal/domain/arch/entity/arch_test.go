@@ -569,3 +569,278 @@ func TestTacticGraph(t *testing.T) {
 		t.Errorf("Expected edges to be %d, but got %d", expectedEdgeCount, len(diagram.Edges()))
 	}
 }
+
+func TestGeneralGraph(t *testing.T) {
+	claObj1 := newMockObjectWithId("test/cmd", "cla1", 1)
+	claObj2 := newMockObjectWithId("test/internal/domain/testdomain", "cla2", 1)
+	claObj20 := newMockClassWithName("test/internal/domain/testdomain/entity", "testdomain")
+	claObj3 := newMockObjectWithId("test/pkg", "cla3", 1)
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	_ = mockRepo.Insert(claObj1)
+	_ = mockRepo.Insert(claObj2)
+	_ = mockRepo.Insert(claObj20)
+	_ = mockRepo.Insert(claObj3)
+
+	mockRelRepo := &MockRelationRepository{
+		relations: make([]arch.Relation, 0),
+	}
+	// Create mock Relation objects for testing
+	depRel := &MockDependenceRelation{
+		from:      claObj1,
+		dependsOn: claObj2,
+	}
+	compRel := &MockCompositionRelation{
+		from:  claObj1,
+		child: claObj2,
+	}
+	_ = mockRelRepo.Insert(depRel)
+	_ = mockRelRepo.Insert(compRel)
+
+	mockArch := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			Scope:   "test",
+			ObjRepo: mockRepo,
+			RelRepo: mockRelRepo,
+		},
+		relationDigraph: nil,
+		directory:       nil,
+	}
+
+	// Call the StrategicGraph function
+	diagram, err := mockArch.GeneralGraph(&MockOptions{
+		ShowAllRel:            false,
+		ShowStructEmbeddedRel: false,
+	})
+
+	// Check for errors
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+		return
+	}
+
+	expectedEdgeCount := 6
+	if len(diagram.Edges()) != expectedEdgeCount {
+		t.Errorf("Expected edges to be %d, but got %d", expectedEdgeCount, len(diagram.Edges()))
+	}
+
+	// Call the StrategicGraph function
+	diagram, err = mockArch.GeneralGraph(&MockOptions{
+		ShowAllRel:            true,
+		ShowStructEmbeddedRel: false,
+	})
+
+	// Check for errors
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+		return
+	}
+
+	expectedEdgeCount = 6
+	if len(diagram.Edges()) != expectedEdgeCount {
+		t.Errorf("Expected edges to be %d, but got %d", expectedEdgeCount, len(diagram.Edges()))
+	}
+
+	// Call the StrategicGraph function
+	diagram, err = mockArch.GeneralGraph(&MockOptions{
+		ShowAllRel:            false,
+		ShowStructEmbeddedRel: true,
+	})
+
+	// Check for errors
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+		return
+	}
+
+	expectedEdgeCount = 6
+	if len(diagram.Edges()) != expectedEdgeCount {
+		t.Errorf("Expected edges to be %d, but got %d", expectedEdgeCount, len(diagram.Edges()))
+	}
+}
+
+func TestBuildGeneralArchGraph(t *testing.T) {
+	mockDirectory, objs := newMockDirectoryWithObjs()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range objs {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	mockArch := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			Scope:   "testpackage",
+			ObjRepo: mockRepo,
+		},
+		relationDigraph: &RelationDigraph{Graph: directed.NewDirectedGraph()},
+		directory:       mockDirectory,
+	}
+
+	diagram, err := mockArch.buildGeneralArchGraph()
+
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	expectedNodeCount := 7
+	if len(diagram.Nodes) != expectedNodeCount {
+		t.Errorf("Expected %d nodes, but got %d", expectedNodeCount, len(diagram.Nodes))
+	}
+
+	expectedEdgeCount := 6
+	if len(diagram.Edges()) != expectedEdgeCount {
+		t.Errorf("Expected edges to be %d, but got %d", expectedEdgeCount, len(diagram.Edges()))
+	}
+}
+
+func TestComponentRelations(t *testing.T) {
+	domain := "testpackage"
+	mockDiagram, err := NewDiagram(domain, arch.PlainDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	mockObject1 := newMockObject(1)
+	mockObject2 := newMockObject(2)
+	mockObject3 := newMockObject(3)
+
+	// Add the mock objects to the Diagram with different nesting depths
+	_ = mockDiagram.AddObjTo(mockObject1, mockDiagram.Name(), arch.RelationTypeAggregationRoot)
+	_ = mockDiagram.AddObjTo(mockObject2, mockObject1.ID(), arch.RelationTypeAggregationRoot)
+	_ = mockDiagram.AddObjTo(mockObject3, mockObject2.ID(), arch.RelationTypeAggregationRoot)
+
+	// Create a new RelationDigraph instance
+	g := &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+	// Add the mock ObjIdentifier objects to the graph
+	_ = g.AddObj(mockObject1.Identifier())
+	_ = g.AddObj(mockObject2.Identifier())
+	_ = g.AddObj(mockObject3.Identifier())
+
+	// Create edges for testing
+	_ = g.AddEdge(mockObject1.Identifier().ID(), mockObject2.Identifier().ID(), arch.RelationTypeComposition, valueobject.NewEmptyRelationPos())
+	_ = g.AddEdge(mockObject2.Identifier().ID(), mockObject3.Identifier().ID(), arch.RelationTypeAggregation, valueobject.NewEmptyRelationPos())
+
+	mockArch := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			Scope: domain,
+		},
+		relationDigraph: g,
+		directory:       nil,
+	}
+
+	// 调用被测试的函数
+	err = mockArch.componentRelations(mockDiagram)
+
+	// 检查是否返回了错误
+	if err != nil {
+		t.Errorf("Expected no error, got: %v", err)
+		return
+	}
+
+	expectedNodeCount := 4
+	if len(mockDiagram.Nodes) != expectedNodeCount {
+		t.Errorf("Expected %d nodes, but got %d", expectedNodeCount, len(mockDiagram.Nodes))
+	}
+
+	expectedEdgeCount := 4
+	if len(mockDiagram.Edges()) != expectedEdgeCount {
+		t.Errorf("Expected edges to be %d, but got %d", expectedEdgeCount, len(mockDiagram.Edges()))
+	}
+}
+
+func TestComponentAssociationRelations(t *testing.T) {
+	domain := "testpackage"
+	mockDiagram, err := NewDiagram(domain, arch.PlainDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	mockObject1 := newMockObject(1)
+	mockObject2 := newMockObject(2)
+	mockObject3 := newMockObject(3)
+
+	// Add the mock objects to the Diagram with different nesting depths
+	_ = mockDiagram.AddObjTo(mockObject1, mockDiagram.Name(), arch.RelationTypeAggregationRoot)
+	_ = mockDiagram.AddObjTo(mockObject2, mockObject1.ID(), arch.RelationTypeAggregationRoot)
+	_ = mockDiagram.AddObjTo(mockObject3, mockObject2.ID(), arch.RelationTypeAggregationRoot)
+
+	// Create a new RelationDigraph instance
+	g := &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+	// Add the mock ObjIdentifier objects to the graph
+	_ = g.AddObj(mockObject1.Identifier())
+	_ = g.AddObj(mockObject2.Identifier())
+	_ = g.AddObj(mockObject3.Identifier())
+
+	// Create edges for testing
+	_ = g.AddEdge(mockObject1.Identifier().ID(), mockObject2.Identifier().ID(), arch.RelationTypeAssociationOneOne, valueobject.NewEmptyRelationPos())
+	_ = g.AddEdge(mockObject2.Identifier().ID(), mockObject3.Identifier().ID(), arch.RelationTypeAssociationOneMany, valueobject.NewEmptyRelationPos())
+
+	mockArch := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			Scope: domain,
+		},
+		relationDigraph: g,
+		directory:       nil,
+	}
+
+	// 调用被测试的函数
+	err = mockArch.componentAssociationRelations(mockDiagram)
+
+	// 检查是否返回了错误
+	if err != nil {
+		t.Errorf("Expected no error, got: %v", err)
+		return
+	}
+
+	expectedNodeCount := 4
+	if len(mockDiagram.Nodes) != expectedNodeCount {
+		t.Errorf("Expected %d nodes, but got %d", expectedNodeCount, len(mockDiagram.Nodes))
+	}
+
+	expectedEdgeCount := 5
+	if len(mockDiagram.Edges()) != expectedEdgeCount {
+		t.Errorf("Expected edges to be %d, but got %d", expectedEdgeCount, len(mockDiagram.Edges()))
+	}
+}
+
+func TestFilterAssociationMetas(t *testing.T) {
+	metas := []arch.RelationMeta{
+		NewMockRelationMeta(arch.RelationTypeAssociationOneOne, &MockRelationPos{
+			fromPos: &MockPosition{FilenameVal: "/path/to/file1.txt", LineVal: 10, ColumnVal: 5},
+			toPos:   &MockPosition{FilenameVal: "/path/to/file2.txt", LineVal: 20, ColumnVal: 15}}),
+		NewMockRelationMeta(arch.RelationTypeAssociationOneMany, &MockRelationPos{
+			fromPos: &MockPosition{FilenameVal: "/path/to/file1.txt", LineVal: 10, ColumnVal: 5},
+			toPos:   &MockPosition{FilenameVal: "/path/to/file2.txt", LineVal: 20, ColumnVal: 15}}),
+		NewMockRelationMeta(arch.RelationTypeBehavior, &MockRelationPos{
+			fromPos: &MockPosition{FilenameVal: "/path/to/file1.txt", LineVal: 10, ColumnVal: 5},
+			toPos:   &MockPosition{FilenameVal: "/path/to/file2.txt", LineVal: 20, ColumnVal: 15}}),
+	}
+
+	// 创建一个模拟的 Arch 实例
+	arc := &Arch{}
+
+	// 调用被测试的函数
+	filteredMetas := arc.filterAssociationMetas(metas)
+
+	// 检查过滤后的切片是否包含了关联关系类型的 RelationMeta 对象
+	for _, meta := range filteredMetas {
+		switch meta.Type() {
+		case arch.RelationTypeAssociationOneOne, arch.RelationTypeAssociationOneMany, arch.RelationTypeAssociation:
+			// 正确类型的 RelationMeta 对象
+		default:
+			t.Errorf("Unexpected RelationMeta type: %v", meta.Type())
+		}
+	}
+
+	// 检查过滤后的切片长度是否与期望相符
+	expectedLength := 2 // 两个关联关系类型的 RelationMeta 对象
+	if len(filteredMetas) != expectedLength {
+		t.Errorf("Expected %d RelationMeta objects, got %d", expectedLength, len(filteredMetas))
+	}
+}

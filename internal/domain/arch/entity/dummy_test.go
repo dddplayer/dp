@@ -362,7 +362,7 @@ func newMockDirectoryWithObjs() (*Directory, []arch.Object) {
 
 	mockDirectory := &Directory{
 		root: &directory.TreeNode{
-			Name: "root",
+			Name: "testpackage",
 			Children: map[string]*directory.TreeNode{
 				string(arch.HexagonDirectoryCmd): {
 					Name:  string(arch.HexagonDirectoryCmd),
@@ -916,3 +916,35 @@ func (o MockOptions) ShowAllRelations() bool {
 func (o MockOptions) ShowStructEmbeddedRelations() bool {
 	return o.ShowStructEmbeddedRel
 }
+
+// MockRelationMeta 是一个模拟的 RelationMeta 接口实现
+type MockRelationMeta struct {
+	metaType arch.RelationType
+	metaPos  arch.RelationPos
+}
+
+// Type 实现 RelationMeta 接口的 Type 方法
+func (m *MockRelationMeta) Type() arch.RelationType {
+	return m.metaType
+}
+
+// Position 实现 RelationMeta 接口的 Position 方法
+func (m *MockRelationMeta) Position() arch.RelationPos {
+	return m.metaPos
+}
+
+// NewMockRelationMeta 创建一个新的 MockRelationMeta 实例
+func NewMockRelationMeta(metaType arch.RelationType, metaPos arch.RelationPos) *MockRelationMeta {
+	return &MockRelationMeta{
+		metaType: metaType,
+		metaPos:  metaPos,
+	}
+}
+
+type MockRelationPos struct {
+	fromPos arch.Position
+	toPos   arch.Position
+}
+
+func (r *MockRelationPos) From() arch.Position { return r.fromPos }
+func (r *MockRelationPos) To() arch.Position   { return r.toPos }
