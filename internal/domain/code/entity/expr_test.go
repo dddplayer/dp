@@ -28,6 +28,22 @@ func TestExpressionVisit(t *testing.T) {
 				},
 			},
 		},
+		{
+			expr: &ast.MapType{
+				Key: &ast.Ident{
+					Name: "KeyType",
+				},
+				Value: &ast.MapType{
+					Key: &ast.Ident{
+						Name: "KeyType",
+					},
+					Value: &ast.Ident{
+						Name: "ValueType",
+					},
+				},
+			},
+			want: []exprInfo{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -55,6 +71,7 @@ func TestGetExprsInfo(t *testing.T) {
 	type testStruct struct {
 		input ast.Expr
 		want  []*exprInfo
+		err   bool
 	}
 
 	tests := []testStruct{
@@ -102,16 +119,37 @@ func TestGetExprsInfo(t *testing.T) {
 				{sel: "", val: "bar", ship: code.OneOne},
 			},
 		},
+		{
+			input: &ast.MapType{
+				Key: &ast.Ident{
+					Name: "KeyType",
+				},
+				Value: &ast.MapType{
+					Key: &ast.Ident{
+						Name: "KeyType",
+					},
+					Value: &ast.Ident{
+						Name: "ValueType",
+					},
+				},
+			},
+			want: []*exprInfo{},
+			err:  true,
+		},
 	}
 
 	for _, test := range tests {
 		got, err := getExprsInfo(test.input)
-		if err != nil {
+		if err != nil && !test.err {
 			t.Errorf("Unexpected error: %v", err)
 			continue
 		}
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf("Input: %s\nGot: %v\nWant: %v", test.input, got, test.want)
+		if err == nil && test.err {
+			t.Errorf("Expected error, got no error")
+			continue
+		}
+		if !test.err && !reflect.DeepEqual(got, test.want) {
+			t.Errorf("Input: %s\nGot: %+v\nWant: %+v", test.input, got, test.want)
 		}
 	}
 }
@@ -207,7 +245,7 @@ func TestGetExprInfo(t *testing.T) {
 				},
 			},
 			expected: nil,
-			err:      false,
+			err:      true,
 		},
 	}
 
@@ -243,6 +281,7 @@ func TestExtractExpr(t *testing.T) {
 			sel  string
 			val  string
 			ship code.RelationShip
+			err  bool
 		}
 	}{
 		{
@@ -257,6 +296,7 @@ func TestExtractExpr(t *testing.T) {
 				sel  string
 				val  string
 				ship code.RelationShip
+				err  bool
 			}{
 				sel:  "foo",
 				val:  "bar",
@@ -272,6 +312,7 @@ func TestExtractExpr(t *testing.T) {
 				sel  string
 				val  string
 				ship code.RelationShip
+				err  bool
 			}{
 				val:  "foo",
 				ship: code.OneOne,
@@ -287,6 +328,7 @@ func TestExtractExpr(t *testing.T) {
 				sel  string
 				val  string
 				ship code.RelationShip
+				err  bool
 			}{
 				sel:  "foo",
 				val:  "bar",
@@ -302,9 +344,26 @@ func TestExtractExpr(t *testing.T) {
 				sel  string
 				val  string
 				ship code.RelationShip
+				err  bool
 			}{
 				val:  "foo",
 				ship: code.OneMany,
+			},
+		},
+		{
+			name: "InvalidMapType",
+			input: &ast.MapType{
+				Key: &ast.Ident{
+					Name: "KeyType",
+				},
+			},
+			want: struct {
+				sel  string
+				val  string
+				ship code.RelationShip
+				err  bool
+			}{
+				err: true,
 			},
 		},
 	}
@@ -312,8 +371,11 @@ func TestExtractExpr(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			sel, val, ship, err := extractExpr(c.input)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
+			if c.want.err && err == nil {
+				t.Errorf("Expected an error, but none occurred")
+			}
+			if !c.want.err && err != nil {
+				t.Errorf("Unexpected error: %v", err)
 			}
 			if sel != c.want.sel {
 				t.Errorf("got sel=%q, want sel=%q", sel, c.want.sel)

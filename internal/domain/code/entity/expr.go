@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"errors"
 	"github.com/dddplayer/dp/internal/domain/code"
 	"go/ast"
 	"golang.org/x/tools/go/packages"
@@ -12,6 +13,7 @@ type expression struct {
 	expr  ast.Expr
 	pkg   *packages.Package
 	infos []*exprInfo
+	errs  []error
 }
 
 type exprInfo struct {
@@ -23,7 +25,8 @@ type exprInfo struct {
 func (e *expression) visit(cb func(path, name string, ship code.RelationShip)) {
 	infos, err := getExprsInfo(e.expr)
 	if err != nil {
-		panic(err)
+		e.errs = append(e.errs, err)
+		return
 	}
 	for _, info := range infos {
 		var exprPath string
@@ -108,8 +111,7 @@ func extractExpr(expr ast.Expr) (sel, val string, ship code.RelationShip, err er
 			ship = code.OneMany
 		}
 	case *ast.MapType:
-		//Todo
-		//fmt.Println("map nesting currently not supported yet, ignore at this time")
+		err = errors.New("map currently not supported yet, ignore at this time")
 	}
 
 	return

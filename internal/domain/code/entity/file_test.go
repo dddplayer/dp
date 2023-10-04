@@ -12,6 +12,13 @@ import (
 	"testing"
 )
 
+func Test_findFile_Error(t *testing.T) {
+	file := findFile(nil, nil)
+	if file != nil {
+		t.Fatalf("expected file to be nil")
+	}
+}
+
 func Test_findFile(t *testing.T) {
 	testDir, err := tmpTestDir()
 	defer os.RemoveAll(testDir) // 删除临时目录
