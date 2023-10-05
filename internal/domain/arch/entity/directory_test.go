@@ -297,3 +297,27 @@ func TestGetObjs(t *testing.T) {
 		t.Errorf("Expected an error for invalid directory, got no error")
 	}
 }
+
+func TestParentDir(t *testing.T) {
+	// 创建一个模拟的 Directory 实例
+	dir := &Directory{}
+
+	// 测试目录
+	testCases := []struct {
+		inputDir          string
+		expectedParentDir string
+	}{
+		{"/root/target", "root"},
+		{"/root", "/"},
+		{"/", "/"},
+		{"/root/dir/file.txt", "dir"},
+	}
+
+	for _, testCase := range testCases {
+		result := dir.ParentDir(testCase.inputDir)
+
+		if result != testCase.expectedParentDir {
+			t.Errorf("Expected parent directory %s for input directory %s, got %s", testCase.expectedParentDir, testCase.inputDir, result)
+		}
+	}
+}
