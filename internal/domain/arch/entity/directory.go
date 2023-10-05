@@ -85,13 +85,6 @@ func (d *Directory) HexagonDirectory(dir string) arch.HexagonDirectory {
 	return arch.HexagonDirectoryInvalid
 }
 
-func (d *Directory) Print() {
-	directory.Walk(d.root, func(dir string, val any) error {
-		fmt.Println(dir, val)
-		return nil
-	})
-}
-
 func (d *Directory) WalkDir(dir string, cb func(string, []arch.ObjIdentifier) error) {
 	targetDir, err := d.getTargetDir(dir)
 	if err != nil {

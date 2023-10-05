@@ -3,6 +3,7 @@ package entity
 import (
 	"github.com/dddplayer/dp/internal/domain/arch"
 	"github.com/dddplayer/dp/pkg/datastructure/directory"
+	"reflect"
 	"testing"
 )
 
@@ -152,5 +153,147 @@ func TestArchDesignPatternWithPlain(t *testing.T) {
 	// Verify that designPattern is DesignPatternPlain
 	if designPattern != arch.DesignPatternPlain {
 		t.Errorf("Expected designPattern to be DesignPatternPlain, but it's not")
+	}
+}
+
+func TestHexagonDirectory(t *testing.T) {
+	// 创建一个模拟的 Directory 实例
+	dir := &Directory{}
+
+	// 测试各种情况
+	testCases := []struct {
+		inputDir        string
+		expectedHexagon arch.HexagonDirectory
+	}{
+		{"domain", arch.HexagonDirectoryDomain},
+		{"entity", arch.HexagonDirectoryEntity},
+		{"valueobject", arch.HexagonDirectoryValueObject},
+		{"repository", arch.HexagonDirectoryRepository},
+		{"factory", arch.HexagonDirectoryFactory},
+		{"domain/aggregate", arch.HexagonDirectoryAggregate},
+		{"invalid", arch.HexagonDirectoryInvalid},
+	}
+
+	for _, testCase := range testCases {
+		result := dir.HexagonDirectory(testCase.inputDir)
+
+		if result != testCase.expectedHexagon {
+			t.Errorf("Expected %v for input directory %s, got %v", testCase.expectedHexagon, testCase.inputDir, result)
+		}
+	}
+}
+
+func TestGetTargetDir(t *testing.T) {
+	// 创建一个模拟的 Directory 实例
+	dir := &Directory{
+		root: &directory.TreeNode{
+			Name: "/root",
+		},
+	}
+
+	// 测试有效目录
+	validDir := "/root/target"
+	expectedTargetDir := "target"
+	result, err := dir.getTargetDir(validDir)
+
+	if err != nil {
+		t.Errorf("Expected no error, got: %v", err)
+	}
+
+	if result != expectedTargetDir {
+		t.Errorf("Expected target directory %s, got %s", expectedTargetDir, result)
+	}
+
+	// 测试无效目录
+	invalidDir := "/invalid/target"
+	_, err = dir.getTargetDir(invalidDir)
+
+	if err == nil {
+		t.Errorf("Expected an error for invalid directory, got no error")
+	}
+}
+
+func TestAddObjs(t *testing.T) {
+	// 创建一个模拟的 Directory 实例
+	dir := &Directory{
+		root: &directory.TreeNode{
+			Name: "/root",
+			Children: map[string]*directory.TreeNode{
+				"target": &directory.TreeNode{
+					Name: "target",
+				},
+			},
+		},
+	}
+
+	// 测试根目录
+	rootDir := "/root"
+	rootObjs := []arch.ObjIdentifier{newMockObject(1)}
+	err := dir.AddObjs(rootDir, rootObjs)
+
+	if err != nil {
+		t.Errorf("Expected no error for root directory, got: %v", err)
+	}
+
+	// 测试有效目录
+	validDir := "/root/target"
+	validObjs := []arch.ObjIdentifier{newMockObject(2)}
+	err = dir.AddObjs(validDir, validObjs)
+
+	if err != nil {
+		t.Errorf("Expected no error for valid directory, got: %v", err)
+	}
+
+	// 测试无效目录
+	invalidDir := "/invalid/target"
+	invalidObjs := []arch.ObjIdentifier{newMockObject(3)}
+	err = dir.AddObjs(invalidDir, invalidObjs)
+
+	if err == nil {
+		t.Errorf("Expected an error for invalid directory, got no error")
+	}
+}
+
+func TestGetObjs(t *testing.T) {
+	// 创建一个模拟的 Directory 实例
+	dir := &Directory{
+		root: &directory.TreeNode{
+			Name: "/root",
+			Children: map[string]*directory.TreeNode{
+				"target": &directory.TreeNode{
+					Name: "target",
+				},
+			},
+		},
+	}
+
+	// 准备模拟的对象标识符切片
+	objs := []arch.ObjIdentifier{newMockObject(1)}
+
+	// 添加对象到目录
+	targetDir := "/root/target"
+	err := dir.AddObjs(targetDir, objs)
+	if err != nil {
+		t.Fatalf("Failed to add objects to directory: %v", err)
+	}
+
+	// 测试获取对象
+	resultObjs, err := dir.GetObjs("target")
+
+	if err != nil {
+		t.Errorf("Expected no error for getting objects, got: %v", err)
+	}
+
+	// 检查获取的对象是否与预期相符
+	if !reflect.DeepEqual(resultObjs, objs) {
+		t.Errorf("Expected objects %v, got %v", objs, resultObjs)
+	}
+
+	// 测试不存在的目录
+	invalidDir := "/invalid/target"
+	_, err = dir.GetObjs(invalidDir)
+
+	if err == nil {
+		t.Errorf("Expected an error for invalid directory, got no error")
 	}
 }
