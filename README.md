@@ -12,7 +12,7 @@
 
 ## Overview
 
-DDD Player is a code governance service written in [Go], optimized for Domain-Driven Design ([DDD]). 
+DDD Player is a arch governance service written in [Go], optimized for Domain-Driven Design ([DDD]). 
 
 ## Installation
 
