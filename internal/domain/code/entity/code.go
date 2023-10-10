@@ -22,6 +22,10 @@ func newGo(path, domain string) (code.Language, error) {
 	return p, nil
 }
 
+func (c *Code) MainPkgPath() string {
+	return c.lan.MainPkgPath()
+}
+
 func (c *Code) VisitFast(handler code.Handler) error {
 	c.lan.VisitFile(handler.NodeHandler, handler.LinkHandler)
 	c.lan.InterfaceImplements(handler.LinkHandler)

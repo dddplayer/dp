@@ -64,6 +64,7 @@ type Language interface {
 	VisitFile(nodeCB NodeCB, linkCB LinkCB)
 	InterfaceImplements(linkCB LinkCB)
 	CallGraph(linkCB LinkCB, mode CallGraphMode) error
+	MainPkgPath() string
 }
 
 type MetaInfo interface {

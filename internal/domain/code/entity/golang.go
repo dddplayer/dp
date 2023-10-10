@@ -53,6 +53,10 @@ func (golang *Go) Load() error {
 	return nil
 }
 
+func (golang *Go) MainPkgPath() string {
+	return golang.mainPkgPath
+}
+
 func (golang *Go) buildProg() {
 	prog, _ := ssautil.AllPackages(golang.Initial, 0)
 	prog.Build()
@@ -187,7 +191,7 @@ func (golang *Go) VisitFile(nodeCB code.NodeCB, linkCB code.LinkCB) {
 
 					case *ast.FuncDecl:
 						funcDecl := decl.(*ast.FuncDecl)
-						if funcDecl.Name.Name == "init" { // ignore init function
+						if ignore(funcDecl.Name.Name) {
 							continue
 						}
 
@@ -419,7 +423,10 @@ func (golang *Go) CallGraph(linkCB code.LinkCB, mode code.CallGraphMode) error {
 }
 
 func ignore(funcName string) bool {
-	if funcName == "init" || strings.HasPrefix(funcName, "init#") || strings.HasPrefix(funcName, "init$") {
+	if funcName == "init" ||
+		strings.HasPrefix(funcName, "init#") ||
+		strings.HasPrefix(funcName, "init$") ||
+		funcName == "_" {
 		return true
 	}
 	return false

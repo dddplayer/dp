@@ -197,3 +197,78 @@ func TestGraph_AddEdge(t *testing.T) {
 		t.Errorf("Expected error message 'to node: %s not found in Digraph', but got: %v", to, err)
 	}
 }
+
+func TestGraph_FindPathsToPrefix(t *testing.T) {
+	graph := NewDirectedGraph()
+
+	_ = graph.AddNode("A", nil)
+	_ = graph.AddNode("B", nil)
+	_ = graph.AddNode("C", nil)
+	_ = graph.AddNode("D1", nil)
+	_ = graph.AddNode("D2", nil)
+	_ = graph.AddNode("E", nil)
+
+	_ = graph.AddEdge("A", "B", nil, nil)
+	_ = graph.AddEdge("A", "C", nil, nil)
+	_ = graph.AddEdge("B", "D1", nil, nil)
+	_ = graph.AddEdge("C", "D2", nil, nil)
+	_ = graph.AddEdge("D1", "E", nil, nil)
+	_ = graph.AddEdge("D2", "E", nil, nil)
+
+	startKey := "A"
+	endKeyPrefix := "D"
+
+	paths := graph.FindPathsToPrefix(startKey, endKeyPrefix)
+	if paths != nil {
+		t.Logf("Paths from %s to keys with prefix %s:", startKey, endKeyPrefix)
+		for _, path := range paths {
+			t.Logf("Path: ")
+			for _, node := range path {
+				t.Logf("%s -> ", node.Key)
+			}
+			t.Logf("\n")
+		}
+	} else {
+		t.Errorf("No paths found from %s to keys with prefix %s.", startKey, endKeyPrefix)
+	}
+}
+
+func TestFindAllPathsToPrefix(t *testing.T) {
+	graph := NewDirectedGraph()
+
+	_ = graph.AddNode("A", nil)
+	_ = graph.AddNode("B", nil)
+	_ = graph.AddNode("C", nil)
+	_ = graph.AddNode("D1", nil)
+	_ = graph.AddNode("D2", nil)
+	_ = graph.AddNode("E", nil)
+
+	_ = graph.AddEdge("A", "B", nil, nil)
+	_ = graph.AddEdge("A", "C", nil, nil)
+	_ = graph.AddEdge("B", "D1", nil, nil)
+	_ = graph.AddEdge("C", "D2", nil, nil)
+	_ = graph.AddEdge("D1", "E", nil, nil)
+	_ = graph.AddEdge("D2", "E", nil, nil)
+
+	startNode := graph.FindNodeByKey("A")
+	endKeyPrefix := "D"
+
+	var paths [][]*Node
+	currentPath := []*Node{startNode}
+	visited := make(map[*Node]bool)
+
+	graph.findAllPathsToPrefix(startNode, endKeyPrefix, &paths, currentPath, visited)
+
+	if paths != nil {
+		t.Logf("Paths to keys with prefix %s:", endKeyPrefix)
+		for _, path := range paths {
+			t.Logf("Path: ")
+			for _, node := range path {
+				t.Logf("%s -> ", node.Key)
+			}
+			t.Logf("\n")
+		}
+	} else {
+		t.Errorf("No paths found to keys with prefix %s.", endKeyPrefix)
+	}
+}

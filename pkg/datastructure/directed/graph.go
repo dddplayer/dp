@@ -1,6 +1,9 @@
 package directed
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Edge struct {
 	From  *Node
@@ -31,7 +34,6 @@ func NewNode(k string, v any) *Node {
 		Value: v,
 		Edges: []*Edge{},
 	}
-
 }
 
 func (g *Graph) AddNode(key string, value any) error {
@@ -82,4 +84,38 @@ func (g *Graph) AddEdge(from string, to string, t any, value any) error {
 	fromNode.Edges = append(fromNode.Edges, edge)
 
 	return nil
+}
+
+func (g *Graph) FindPathsToPrefix(startKey, endKeyPrefix string) [][]*Node {
+	startNode := g.FindNodeByKey(startKey)
+
+	if startNode == nil {
+		return nil // 无效的起点
+	}
+
+	var paths [][]*Node
+	currentPath := []*Node{startNode}
+
+	visited := make(map[*Node]bool)
+	g.findAllPathsToPrefix(startNode, endKeyPrefix, &paths, currentPath, visited)
+
+	return paths
+}
+
+func (g *Graph) findAllPathsToPrefix(node *Node, endKeyPrefix string, paths *[][]*Node, currentPath []*Node, visited map[*Node]bool) {
+	if strings.HasPrefix(node.Key, endKeyPrefix) {
+		// 找到一条路径，将其添加到结果中
+		*paths = append(*paths, append([]*Node(nil), currentPath...))
+		return
+	}
+
+	visited[node] = true
+	for _, edge := range node.Edges {
+		nextNode := edge.To
+		if !visited[nextNode] {
+			// 递归探索下一个节点
+			g.findAllPathsToPrefix(nextNode, endKeyPrefix, paths, append(currentPath, nextNode), visited)
+		}
+	}
+	visited[node] = false
 }
