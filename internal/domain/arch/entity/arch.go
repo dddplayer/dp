@@ -322,16 +322,17 @@ func (arc *Arch) GeneralGraph(ops arch.Options) (arch.Diagram, error) {
 	return g, nil
 }
 
-func (arc *Arch) MessageFlowDiagram(mainPkgPath string) (arch.Diagram, error) {
+func (arc *Arch) MessageFlowDiagram(startPath, endPath string) (arch.Diagram, error) {
 	if err := arc.BuildPlain(); err != nil {
 		return nil, err
 	}
 
 	mf := &MessageFlow{
-		directory:   arc.directory,
-		objRepo:     arc.ObjRepo,
-		mainPkgPath: mainPkgPath,
-		endPkgPath:  arc.Scope,
+		directory:       arc.directory,
+		relationDigraph: arc.relationDigraph,
+		objRepo:         arc.ObjRepo,
+		mainPkgPath:     startPath,
+		endPkgPath:      endPath,
 	}
 
 	return mf.buildDiagram()

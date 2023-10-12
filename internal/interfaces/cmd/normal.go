@@ -17,6 +17,7 @@ type normalCmd struct {
 	pkgFlag    *string
 	comFlag    *bool
 	detailFlag *bool
+	mfFlag     *bool
 }
 
 func NewNormalCmd(parent *flag.FlagSet) (*normalCmd, error) {
@@ -31,6 +32,7 @@ func NewNormalCmd(parent *flag.FlagSet) (*normalCmd, error) {
 		"[required] target package path \n(e.g. %s)", "github.com/dddplayer/dp/internal/domain"))
 	nCmd.comFlag = nCmd.cmd.Bool("c", false, "show struct composition relation")
 	nCmd.detailFlag = nCmd.cmd.Bool("d", false, "show all relations")
+	nCmd.mfFlag = nCmd.cmd.Bool("mf", false, "show message flow relations")
 
 	err := nCmd.cmd.Parse(parent.Args()[1:])
 	if err != nil {
@@ -59,6 +61,10 @@ func (nc *normalCmd) Run() error {
 		return normalCompositionGraph(*nc.mainFlag, *nc.pkgFlag)
 	}
 
+	if *nc.mfFlag {
+		return normalMessageFlowGraph(*nc.mainFlag, *nc.pkgFlag)
+	}
+
 	if *nc.detailFlag {
 		return normalDetailGraph(*nc.mainFlag, *nc.pkgFlag)
 	}
@@ -83,6 +89,21 @@ func normalCompositionGraph(mainPkg, domain string) error {
 
 func normalDetailGraph(mainPkg, domain string) error {
 	dot, err := application.DetailGeneralGraph(mainPkg, domain,
+		&persistence.RadixTree{Tree: radix.NewTree()},
+		&persistence.Relations{},
+	)
+	if err != nil {
+		return err
+	}
+
+	open(dot)
+	writeToDisk(dot, strings.ReplaceAll(domain, "/", "."))
+
+	return nil
+}
+
+func normalMessageFlowGraph(mainPkg, domain string) error {
+	dot, err := application.MessageFlowGraph(mainPkg, domain,
 		&persistence.RadixTree{Tree: radix.NewTree()},
 		&persistence.Relations{},
 	)

@@ -18,7 +18,14 @@ type MessageFlow struct {
 func (mf *MessageFlow) buildDiagram() (*Diagram, error) {
 	if n := mf.relationDigraph.FindNodeByKey(mf.mainFuncPath()); n != nil {
 		ps := mf.relationDigraph.FindPathsToPrefix(mf.mainFuncPath(), mf.endPkgPath)
-		fmt.Println(ps)
+		for _, p := range ps {
+			fmt.Println("------")
+			for _, n := range p {
+				fmt.Println(n.Key)
+			}
+		}
+	} else {
+		fmt.Println("????", mf.relationDigraph.FindNodeByKey("github.com/dddplayer/markdown/cmd.main"))
 	}
 
 	gm, err := NewGeneralModel(mf.objRepo, mf.directory)
@@ -42,7 +49,8 @@ func (mf *MessageFlow) buildDiagram() (*Diagram, error) {
 }
 
 func (mf *MessageFlow) mainFuncPath() string {
-	return fmt.Sprintf("%s/%s", mf.mainPkgPath, "main")
+	mfp := fmt.Sprintf("%s/%s", mf.mainPkgPath, "main")
+	return mfp
 }
 
 func (mf *MessageFlow) modulePath() string {

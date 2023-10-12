@@ -11,7 +11,8 @@ func PortStr(name string) string {
 	for _, old := range []string{".", "-", "/"} {
 		ps = strings.ReplaceAll(ps, old, dot.Joiner)
 	}
-	return GenerateShortURL(ps)
+	return ps
+	//return GenerateShortURL(ps)
 }
 
 func GenerateShortURL(originalURL string) string {
