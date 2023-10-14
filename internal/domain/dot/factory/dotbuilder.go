@@ -124,7 +124,7 @@ func (db *DotBuilder) buildEdge(e arch.Edge) *entity.Edge {
 		To:      toPort,
 		Tooltip: fmt.Sprintf("%s -> %s: \n\n%s", path.Base(e.From()), path.Base(e.To()), ConcatenateRelationPos(e.Pos())),
 		L:       strconv.Itoa(e.Count()),
-		T:       string(dot.EdgeTypeDot),
+		T:       string(db.edgeStyle(e)),
 		A:       string(db.arrowHead(e)),
 	}
 }
@@ -154,6 +154,14 @@ func (db *DotBuilder) arrowHead(e arch.Edge) dot.EdgeArrowHead {
 		return dot.EdgeArrowHeadNormal
 	}
 	return dot.EdgeArrowHeadNormal
+}
+
+func (db *DotBuilder) edgeStyle(e arch.Edge) dot.EdgeType {
+	switch e.Type() {
+	case arch.RelationTypeDependency:
+		return dot.EdgeTypeSolid
+	}
+	return dot.EdgeTypeDot
 }
 
 func (db *DotBuilder) buildTemplates() error {

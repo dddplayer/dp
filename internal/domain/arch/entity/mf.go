@@ -71,7 +71,7 @@ func (mf *MessageFlow) buildDiagram() (*Diagram, error) {
 
 	var preIdentifier arch.ObjIdentifier
 	for _, p := range dirFilter.paths {
-		for _, n := range p {
+		for i, n := range p {
 			if preIdentifier == nil {
 				preIdentifier = n.Value.(arch.ObjIdentifier)
 				continue
@@ -84,14 +84,32 @@ func (mf *MessageFlow) buildDiagram() (*Diagram, error) {
 			if err != nil {
 				return nil, err
 			}
-			if err := g.AddRelations(preIdentifier.ID(), current.ID(), metas); err != nil {
+			repeatMetas := repeatElements(metas, i)
+			if err := g.AddRelations(preIdentifier.ID(), current.ID(), repeatMetas); err != nil {
 				return nil, err
 			}
+
 			preIdentifier = current
 		}
 	}
 
 	return g, nil
+}
+
+func repeatElements(input []arch.RelationMeta, N int) []arch.RelationMeta {
+	result := make([]arch.RelationMeta, 0)
+
+	for _, element := range input {
+		if element.Type() == arch.RelationTypeDependency {
+			for i := 0; i < N; i++ {
+				result = append(result, element)
+			}
+		} else {
+			result = append(result, element)
+		}
+	}
+
+	return result
 }
 
 func (mf *MessageFlow) mainFuncPath() string {
