@@ -6,7 +6,6 @@ import (
 	"github.com/dddplayer/dp/internal/domain/arch/repository"
 	"github.com/dddplayer/dp/internal/domain/arch/valueobject"
 	"path"
-	"strings"
 )
 
 type GeneralModel struct {
@@ -23,20 +22,15 @@ func NewGeneralModel(r repository.ObjectRepository, d *Directory) (*GeneralModel
 	}, nil
 }
 
-func isValid(pkgSet []string, dir string) bool {
-	for _, pkg := range pkgSet {
-		if strings.HasPrefix(pkg, dir) {
-			return true
-		}
-	}
-	return false
+type groupingFilter interface {
+	IsValid(dir string) bool
 }
 
-func (gm *GeneralModel) GroupingWithFilter(pkgs []string) error {
+func (gm *GeneralModel) GroupingWithFilter(filter groupingFilter) error {
 	rootDir := gm.directory.RootDir()
 
 	gm.directory.WalkRootDir(func(dir string, objIds []arch.ObjIdentifier) error {
-		if !isValid(pkgs, dir) {
+		if !filter.IsValid(dir) {
 			return nil
 		}
 

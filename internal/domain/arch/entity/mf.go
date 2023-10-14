@@ -1,9 +1,11 @@
 package entity
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dddplayer/dp/internal/domain/arch"
 	"github.com/dddplayer/dp/internal/domain/arch/repository"
+	"github.com/dddplayer/dp/pkg/datastructure/directed"
 	"path"
 	"strings"
 )
@@ -16,62 +18,80 @@ type MessageFlow struct {
 	endPkgPath      string
 }
 
-func (mf *MessageFlow) buildDiagram() (*Diagram, error) {
-	var validPkgs []string
+type DirFilter struct {
+	pkgSet []string
+	paths  [][]*directed.Node
+}
+
+func (sf *DirFilter) IsValid(dir string) bool {
+	for _, pkg := range sf.pkgSet {
+		if strings.HasPrefix(pkg, dir) {
+			return true
+		}
+	}
+	return false
+}
+
+func (mf *MessageFlow) newDirFilter() (*DirFilter, error) {
 	if n := mf.relationDigraph.FindNodeByKey(mf.mainFuncPath()); n != nil {
 		ps := mf.relationDigraph.FindPathsToPrefix(mf.mainFuncPath(), mf.endPkgPath)
+		var validPkgs []string
 		for _, p := range ps {
 			for _, n := range p {
 				validPkgs = append(validPkgs, path.Dir(n.Key))
 			}
 		}
+		return &DirFilter{pkgSet: validPkgs, paths: ps}, nil
+	}
+	return nil, errors.New("main func not found")
+}
 
-		gm, err := NewGeneralModel(mf.objRepo, mf.directory)
-		if err != nil {
-			return nil, err
-		}
-		if err := gm.GroupingWithFilter(validPkgs); err != nil {
-			return nil, err
-		}
-
-		g, err := NewDiagram(mf.modulePath(), arch.TableDiagram)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := gm.addRootGroupToDiagram(g); err != nil {
-			return nil, err
-		}
-
-		var preIdentifier arch.ObjIdentifier
-		for _, p := range ps {
-			for _, n := range p {
-				if preIdentifier == nil {
-					preIdentifier = n.Value.(arch.ObjIdentifier)
-					continue
-				}
-				current := n.Value.(arch.ObjIdentifier)
-				metas, err := mf.relationDigraph.RelationMetas(
-					preIdentifier,
-					current,
-				)
-				if err != nil {
-					return nil, err
-				}
-				if err := g.AddRelations(preIdentifier.ID(), current.ID(), metas); err != nil {
-					return nil, err
-				}
-				preIdentifier = current
-			}
-		}
-
-		return g, nil
-
-	} else {
-		fmt.Println(" error ????", mf.relationDigraph.FindNodeByKey("github.com/dddplayer/markdown/cmd.main"))
+func (mf *MessageFlow) buildDiagram() (*Diagram, error) {
+	dirFilter, err := mf.newDirFilter()
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, nil
+	gm, err := NewGeneralModel(mf.objRepo, mf.directory)
+	if err != nil {
+		return nil, err
+	}
+	if err := gm.GroupingWithFilter(dirFilter); err != nil {
+		return nil, err
+	}
+
+	g, err := NewDiagram(mf.modulePath(), arch.TableDiagram)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := gm.addRootGroupToDiagram(g); err != nil {
+		return nil, err
+	}
+
+	var preIdentifier arch.ObjIdentifier
+	for _, p := range dirFilter.paths {
+		for _, n := range p {
+			if preIdentifier == nil {
+				preIdentifier = n.Value.(arch.ObjIdentifier)
+				continue
+			}
+			current := n.Value.(arch.ObjIdentifier)
+			metas, err := mf.relationDigraph.RelationMetas(
+				preIdentifier,
+				current,
+			)
+			if err != nil {
+				return nil, err
+			}
+			if err := g.AddRelations(preIdentifier.ID(), current.ID(), metas); err != nil {
+				return nil, err
+			}
+			preIdentifier = current
+		}
+	}
+
+	return g, nil
 }
 
 func (mf *MessageFlow) mainFuncPath() string {
