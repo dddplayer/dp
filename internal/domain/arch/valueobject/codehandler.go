@@ -24,7 +24,7 @@ func (ch *CodeHandler) NodeHandler(node *code.Node) {
 	pos := newPosition(node.Pos)
 
 	switch node.Type {
-	case code.TypeGenIdent, code.TypeGenFunc, code.TypeGenArray:
+	case code.TypeGenIdent, code.TypeGenFunc, code.TypeGenArray, code.TypeGenMap:
 		ch.handleGenObj(id, pos)
 	case code.TypeGenStruct:
 		ch.handleClass(id, pos)
@@ -44,9 +44,9 @@ func (ch *CodeHandler) NodeHandler(node *code.Node) {
 		ch.handleInterfaceMethod(id, pos, newIdentifier(node.Parent.Meta))
 	case code.TypeFunc:
 		if node.Parent != nil {
-			ch.handleFunc(id, pos, newIdentifier(node.Parent.Meta))
+			ch.handleFunc(id, pos, newIdentifier(node.Parent.Meta), newPosition(node.Parent.Pos))
 		} else {
-			ch.handleFunc(id, pos, nil)
+			ch.handleFunc(id, pos, nil, nil)
 		}
 	default:
 		ch.handleGenObj(id, pos)
@@ -58,6 +58,14 @@ func (ch *CodeHandler) handleClass(id *ident, pos *pos) {
 		obj:     &obj{id: id, pos: pos},
 		attrs:   []*ident{},
 		methods: []*ident{},
+	}
+
+	if objR := ch.ObjRepo.Find(c.Identifier()); objR != nil {
+		if o, ok := objR.(*MissingReceiver); ok {
+			for _, m := range o.methods {
+				c.AppendMethod(m)
+			}
+		}
 	}
 
 	if err := ch.ObjRepo.Insert(c); err != nil {
@@ -85,7 +93,7 @@ func (ch *CodeHandler) handleGenObj(id *ident, pos *pos) {
 	}
 }
 
-func (ch *CodeHandler) handleFunc(id *ident, pos *pos, pid *ident) {
+func (ch *CodeHandler) handleFunc(id *ident, pos *pos, pid *ident, parentPos *pos) {
 	genObj := &Function{
 		obj:      &obj{id: id, pos: pos},
 		Receiver: pid,
@@ -96,9 +104,22 @@ func (ch *CodeHandler) handleFunc(id *ident, pos *pos, pid *ident) {
 	}
 
 	if pid != nil {
-		if obj := ch.ObjRepo.Find(pid); obj != nil {
-			if o, ok := obj.(*Class); ok {
+		if objR := ch.ObjRepo.Find(pid); objR != nil {
+			if o, ok := objR.(*Class); ok {
 				o.AppendMethod(id)
+			} else if o, ok := objR.(*MissingReceiver); ok {
+				o.AppendMethod(id)
+			}
+
+		} else {
+			missingRec := &MissingReceiver{
+				obj: &obj{id: pid, pos: parentPos},
+				methods: []*ident{
+					id,
+				},
+			}
+			if err := ch.ObjRepo.Insert(missingRec); err != nil {
+				ch.pushError(err)
 			}
 		}
 	}

@@ -35,14 +35,23 @@ func (sf *DirFilter) IsValid(dir string) bool {
 func (mf *MessageFlow) newDirFilter() (*DirFilter, error) {
 	if n := mf.relationDigraph.FindNodeByKey(mf.mainFuncPath()); n != nil {
 		ps := mf.relationDigraph.FindPathsToPrefix(mf.mainFuncPath(), mf.endPkgPath)
-		var validPkgs []string
+		validPkgs := make(map[string]bool)
 		for _, p := range ps {
 			for _, n := range p {
-				validPkgs = append(validPkgs, path.Dir(n.Key))
+				dir := path.Dir(n.Key)
+				if ok := validPkgs[dir]; !ok {
+					validPkgs[dir] = true
+				}
 			}
 		}
-		return &DirFilter{pkgSet: validPkgs, paths: ps}, nil
+
+		keys := make([]string, 0, len(validPkgs))
+		for key := range validPkgs {
+			keys = append(keys, key)
+		}
+		return &DirFilter{pkgSet: keys, paths: ps}, nil
 	}
+
 	return nil, errors.New("main func not found")
 }
 

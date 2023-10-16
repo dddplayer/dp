@@ -8,7 +8,14 @@ import (
 
 type RadixTree struct {
 	Tree   *radix.Tree
-	objIds []arch.ObjIdentifier
+	objIds map[string]arch.ObjIdentifier
+}
+
+func NewRadixTree() *RadixTree {
+	return &RadixTree{
+		Tree:   radix.NewTree(),
+		objIds: make(map[string]arch.ObjIdentifier),
+	}
 }
 
 func (r *RadixTree) Find(id arch.ObjIdentifier) arch.Object {
@@ -22,14 +29,20 @@ func (r *RadixTree) Find(id arch.ObjIdentifier) arch.Object {
 
 func (r *RadixTree) Insert(obj arch.Object) error {
 	if ok := r.Tree.Insert(obj.Identifier().ID(), obj); ok {
-		r.objIds = append(r.objIds, obj.Identifier())
+		if _, ok := r.objIds[obj.Identifier().ID()]; !ok {
+			r.objIds[obj.Identifier().ID()] = obj.Identifier()
+		}
 		return nil
 	}
 	return fmt.Errorf("insert failed")
 }
 
 func (r *RadixTree) All() []arch.ObjIdentifier {
-	return r.objIds
+	var ids []arch.ObjIdentifier
+	for _, i := range r.objIds {
+		ids = append(ids, i)
+	}
+	return ids
 }
 
 func (r *RadixTree) Walk(cb func(obj arch.Object) error) {

@@ -19,6 +19,7 @@ const (
 	TypeGenIdent NodeType = 1 << iota
 	TypeGenFunc
 	TypeGenArray
+	TypeGenMap
 	TypeGenStruct
 	TypeGenStructField
 	TypeGenStructEmbeddedField

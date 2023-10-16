@@ -14,6 +14,11 @@ type General struct {
 	*obj
 }
 
+type MissingReceiver struct {
+	*obj
+	methods []*ident
+}
+
 type Class struct {
 	*obj
 	attrs   []*ident
@@ -44,6 +49,10 @@ func (k *Class) AppendAttribute(id *ident) {
 }
 func (k *Class) Methods() []*ident { return k.methods }
 func (k *Class) AppendMethod(id *ident) {
+	k.methods = append(k.methods, id)
+}
+
+func (k *MissingReceiver) AppendMethod(id *ident) {
 	k.methods = append(k.methods, id)
 }
 

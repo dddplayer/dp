@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/dddplayer/dp/internal/application"
 	"github.com/dddplayer/dp/internal/infrastructure/persistence"
-	"github.com/dddplayer/dp/pkg/datastructure/radix"
 	"strings"
 )
 
@@ -74,7 +73,7 @@ func (nc *normalCmd) Run() error {
 
 func normalCompositionGraph(mainPkg, domain string) error {
 	dot, err := application.CompositionGeneralGraph(mainPkg, domain,
-		&persistence.RadixTree{Tree: radix.NewTree()},
+		persistence.NewRadixTree(),
 		&persistence.Relations{},
 	)
 	if err != nil {
@@ -89,7 +88,7 @@ func normalCompositionGraph(mainPkg, domain string) error {
 
 func normalDetailGraph(mainPkg, domain string) error {
 	dot, err := application.DetailGeneralGraph(mainPkg, domain,
-		&persistence.RadixTree{Tree: radix.NewTree()},
+		persistence.NewRadixTree(),
 		&persistence.Relations{},
 	)
 	if err != nil {
@@ -104,7 +103,7 @@ func normalDetailGraph(mainPkg, domain string) error {
 
 func normalMessageFlowGraph(mainPkg, domain string) error {
 	dot, err := application.MessageFlowGraph(mainPkg, domain,
-		&persistence.RadixTree{Tree: radix.NewTree()},
+		persistence.NewRadixTree(),
 		&persistence.Relations{},
 	)
 	if err != nil {
@@ -119,7 +118,7 @@ func normalMessageFlowGraph(mainPkg, domain string) error {
 
 func normalGraph(mainPkg, domain string) error {
 	dot, err := application.GeneralGraph(mainPkg, domain,
-		&persistence.RadixTree{Tree: radix.NewTree()},
+		persistence.NewRadixTree(),
 		&persistence.Relations{},
 	)
 	if err != nil {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/dddplayer/dp/internal/application"
 	"github.com/dddplayer/dp/internal/infrastructure/persistence"
-	"github.com/dddplayer/dp/pkg/datastructure/radix"
 )
 
 type strategicCmd struct {
@@ -55,7 +54,7 @@ func (sc *strategicCmd) Run() error {
 
 func strategicGraph(mainPkg, domain string) error {
 	dot, err := application.StrategicGraph(mainPkg, domain,
-		&persistence.RadixTree{Tree: radix.NewTree()},
+		persistence.NewRadixTree(),
 		&persistence.Relations{},
 	)
 	if err != nil {

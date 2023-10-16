@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/dddplayer/dp/internal/application"
 	"github.com/dddplayer/dp/internal/infrastructure/persistence"
-	"github.com/dddplayer/dp/pkg/datastructure/radix"
 	"path"
 	"strings"
 )
@@ -63,7 +62,7 @@ func (sc *tacticCmd) Run() error {
 
 func tacticGraph(mainPkg, domain string) error {
 	dot, err := application.TacticGraph(mainPkg, domain,
-		&persistence.RadixTree{Tree: radix.NewTree()},
+		persistence.NewRadixTree(),
 		&persistence.Relations{},
 	)
 	if err != nil {
@@ -77,7 +76,7 @@ func tacticGraph(mainPkg, domain string) error {
 
 func detailTacticGraph(mainPkg, domain string) error {
 	dot, err := application.DetailTacticGraph(mainPkg, domain,
-		&persistence.RadixTree{Tree: radix.NewTree()},
+		persistence.NewRadixTree(),
 		&persistence.Relations{},
 	)
 	if err != nil {

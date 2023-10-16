@@ -95,6 +95,9 @@ func (golang *Go) VisitFile(nodeCB code.NodeCB, linkCB code.LinkCB) {
 								case *ast.ArrayType:
 									node.Type = code.TypeGenArray
 									nodeCB(node)
+								case *ast.MapType:
+									node.Type = code.TypeGenMap
+									nodeCB(node)
 
 								case *ast.StructType:
 									node.Type = code.TypeGenStruct
@@ -445,8 +448,8 @@ func (golang *Go) functionNode(node *callgraph.Node) *code.Node {
 	}
 
 	recv := node.Func.Signature.Recv()
-	if strings.Contains(funcName, "$1") && node.Func.Parent() != nil {
-		count := strings.Count(funcName, "$1")
+	if strings.Contains(funcName, "$") && node.Func.Parent() != nil {
+		count := strings.Count(funcName, "$")
 		p := node.Func.Parent()
 		for i := 1; i < count; i++ {
 			if p != nil {

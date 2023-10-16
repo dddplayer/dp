@@ -72,7 +72,9 @@ func (g *Graph) AddEdge(from string, to string, t any, value any) error {
 		return fmt.Errorf("from node: %s not found in Digraph", from)
 	}
 	if toNode == nil {
-		return fmt.Errorf("to node: %s not found in Digraph", to)
+		fmt.Println("~~~", from, to)
+		panic(fmt.Errorf("to node: %s not found in Digraph", to))
+		//return fmt.Errorf("to node: %s not found in Digraph", to)
 	}
 
 	edge := &Edge{
