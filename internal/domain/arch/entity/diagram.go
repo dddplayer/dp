@@ -397,7 +397,12 @@ func (es edges) merge() []*mergedEdge {
 		if me, ok := mergedEdges[key]; ok {
 			me.count++
 			if relPos != nil {
-				me.pos = append(me.pos, relPos)
+				for _, existingPos := range me.pos {
+					if !existingPos.From().IsEqual(relPos.From()) || !existingPos.To().IsEqual(relPos.To()) {
+						me.pos = append(me.pos, relPos)
+						break
+					}
+				}
 			}
 		} else {
 			m := &mergedEdge{

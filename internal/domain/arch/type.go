@@ -53,6 +53,7 @@ type Position interface {
 	Offset() int
 	Line() int
 	Column() int
+	IsEqual(pos Position) bool
 }
 
 type RelationType uint8

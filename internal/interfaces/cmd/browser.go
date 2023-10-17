@@ -13,6 +13,7 @@ func open(raw string) {
 	encoded := encodeURIComponent(raw)
 	err := openBrowser(fmt.Sprintf("%s/#%s", officialWebsiteUrl, encoded))
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 }

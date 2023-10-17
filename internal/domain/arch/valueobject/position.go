@@ -1,6 +1,7 @@
 package valueobject
 
 import (
+	"github.com/dddplayer/dp/internal/domain/arch"
 	"github.com/dddplayer/dp/internal/domain/code"
 )
 
@@ -16,6 +17,12 @@ func (p *pos) Offset() int      { return p.offset }
 func (p *pos) Line() int        { return p.line }
 func (p *pos) Column() int      { return p.column }
 func (p pos) Valid() bool       { return p.line != -1 }
+func (p pos) IsEqual(pos arch.Position) bool {
+	return p.filename == pos.Filename() &&
+		p.offset == pos.Offset() &&
+		p.line == pos.Line() &&
+		p.column == pos.Column()
+}
 
 func newPosition(id code.Position) *pos {
 	return &pos{

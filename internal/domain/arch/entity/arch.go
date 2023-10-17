@@ -322,7 +322,7 @@ func (arc *Arch) GeneralGraph(ops arch.Options) (arch.Diagram, error) {
 	return g, nil
 }
 
-func (arc *Arch) MessageFlowDiagram(startPath, endPath string) (arch.Diagram, error) {
+func (arc *Arch) MessageFlowDiagram(startPath, endPath, modPath string) (arch.Diagram, error) {
 	if err := arc.BuildPlain(); err != nil {
 		return nil, err
 	}
@@ -333,6 +333,7 @@ func (arc *Arch) MessageFlowDiagram(startPath, endPath string) (arch.Diagram, er
 		objRepo:         arc.ObjRepo,
 		mainPkgPath:     startPath,
 		endPkgPath:      endPath,
+		modulePath:      modPath,
 	}
 
 	return mf.buildDiagram()

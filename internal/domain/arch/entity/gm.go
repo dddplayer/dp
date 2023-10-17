@@ -24,6 +24,7 @@ func NewGeneralModel(r repository.ObjectRepository, d *Directory) (*GeneralModel
 
 type groupingFilter interface {
 	IsValid(dir string) bool
+	FilterObjs(objs []arch.Object) []arch.Object
 }
 
 func (gm *GeneralModel) GroupingWithFilter(filter groupingFilter) error {
@@ -38,6 +39,7 @@ func (gm *GeneralModel) GroupingWithFilter(filter groupingFilter) error {
 		if err != nil {
 			return err
 		}
+		objs = filter.FilterObjs(objs)
 
 		if dir == rootDir {
 			gm.rootGroup = valueobject.NewGroup(dir, objs...)

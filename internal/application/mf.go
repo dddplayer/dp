@@ -40,7 +40,7 @@ func MessageFlowGraph(mainPkgPath, domain string,
 		return "", err
 	}
 
-	g, err := arch.MessageFlowDiagram(c.MainPkgPath(), domain)
+	g, err := arch.MessageFlowDiagram(c.MainPkgPath(), domain, modPath)
 	if err != nil {
 		return "", err
 	}
