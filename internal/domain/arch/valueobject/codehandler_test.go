@@ -172,7 +172,7 @@ func TestDomainModel_HandleFunc(t *testing.T) {
 	pos := &pos{filename: "myFunction.go", offset: 10, line: 5, column: 15}
 
 	// call handleFunc method
-	dm.handleFunc(id, pos, nil)
+	dm.handleFunc(id, pos, nil, nil)
 
 	// check if the repository was called with the correct object
 	if len(repo.data) != 1 {
@@ -200,7 +200,7 @@ func TestDomainModel_HandleFunc(t *testing.T) {
 		t.Errorf("Expected object in repository to have pos %v, but got %v", pos, fn.obj.pos)
 	}
 
-	dm.handleFunc(id, pos, nil)
+	dm.handleFunc(id, pos, nil, nil)
 	// check if an error was pushed to the errors slice
 	if len(dm.errors) != 1 {
 		t.Errorf("Expected 1 error, but got %v", len(dm.errors))
@@ -233,7 +233,7 @@ func TestDomainModel_HandleFuncWithParent(t *testing.T) {
 	}
 
 	// call handleFunc method
-	dm.handleFunc(id, pos, pid)
+	dm.handleFunc(id, pos, pid, pos)
 
 	// check if the repository was called with the correct object
 	if len(repo.data) != 2 {

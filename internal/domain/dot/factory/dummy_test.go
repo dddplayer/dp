@@ -156,6 +156,12 @@ func (p *MockPosition) Filename() string { return p.filename }
 func (p *MockPosition) Offset() int      { return p.offset }
 func (p *MockPosition) Line() int        { return p.line }
 func (p *MockPosition) Column() int      { return p.column }
+func (p MockPosition) IsEqual(pos arch.Position) bool {
+	return p.filename == pos.Filename() &&
+		p.offset == pos.Offset() &&
+		p.line == pos.Line() &&
+		p.column == pos.Column()
+}
 
 type MockRelationPos struct {
 	fromPos arch.Position

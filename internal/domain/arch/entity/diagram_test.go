@@ -740,8 +740,8 @@ func TestEdgesMerge(t *testing.T) {
 			if me.Count() != 2 {
 				t.Errorf("Expected Count() of merged edge 1 to be 2, but got %d", me.Count())
 			}
-			if len(me.Pos()) != 2 {
-				t.Errorf("Expected Pos() of merged edge 1 to have 2 elements, but got %d", len(me.Pos()))
+			if len(me.Pos()) != 1 {
+				t.Errorf("Expected Pos() of merged edge 1 to have 1 elements, but got %d", len(me.Pos()))
 			}
 		} else if me.From() == mockObject2.ID() {
 			if me.To() != mockObject3.ID() {

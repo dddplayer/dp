@@ -106,6 +106,13 @@ func (mp *MockPosition) Column() int {
 	return mp.ColumnVal
 }
 
+func (mp *MockPosition) IsEqual(pos arch.Position) bool {
+	return mp.Filename() == pos.Filename() &&
+		mp.Offset() == pos.Offset() &&
+		mp.Line() == pos.Line() &&
+		mp.Column() == pos.Column()
+}
+
 func TestObjectRepository(t *testing.T) {
 	mockIdentifier1 := &MockIdentifier{IDVal: "id1"}
 	mockPosition1 := &MockPosition{FilenameVal: "file1", OffsetVal: 10, LineVal: 5, ColumnVal: 2}

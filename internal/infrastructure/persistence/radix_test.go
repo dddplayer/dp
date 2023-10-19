@@ -3,14 +3,13 @@ package persistence
 import (
 	"errors"
 	"github.com/dddplayer/dp/internal/domain/arch"
-	"github.com/dddplayer/dp/pkg/datastructure/radix"
 	"testing"
 )
 
 func TestRadixTree_Find(t *testing.T) {
 	t.Run("Object Found", func(t *testing.T) {
 		// 创建 RadixTree 实例
-		r := &RadixTree{Tree: radix.NewTree()}
+		r := NewRadixTree()
 
 		// 创建一个 MockObject 和 MockIdentifier 并插入到 RadixTree 中
 		mockID := &MockIdentifier{IDVal: "id1"}
@@ -33,7 +32,7 @@ func TestRadixTree_Find(t *testing.T) {
 
 	t.Run("Object Not Found", func(t *testing.T) {
 		// 创建 RadixTree 实例
-		r := &RadixTree{Tree: radix.NewTree()}
+		r := NewRadixTree()
 
 		// 创建一个 MockIdentifier，但不插入到 RadixTree 中
 		mockID := &MockIdentifier{IDVal: "id2"}
@@ -51,7 +50,7 @@ func TestRadixTree_Find(t *testing.T) {
 func TestRadixTree_Insert(t *testing.T) {
 	t.Run("Insert Successful", func(t *testing.T) {
 		// 创建 RadixTree 实例
-		r := &RadixTree{Tree: radix.NewTree()}
+		r := NewRadixTree()
 
 		// 创建一个 MockObject 和 MockIdentifier
 		mockID := &MockIdentifier{IDVal: "id1"}
@@ -77,7 +76,7 @@ func TestRadixTree_Insert(t *testing.T) {
 
 	t.Run("Insert Duplicate ID", func(t *testing.T) {
 		// 创建 RadixTree 实例
-		r := &RadixTree{Tree: radix.NewTree()}
+		r := NewRadixTree()
 
 		// 创建两个 MockObject，但它们具有相同的 ID
 		mockID := &MockIdentifier{IDVal: "id2"}
@@ -119,7 +118,11 @@ func TestRadixTree_All(t *testing.T) {
 		mockID2 := &MockIdentifier{IDVal: "id2"}
 		mockID3 := &MockIdentifier{IDVal: "id3"}
 
-		r.objIds = []arch.ObjIdentifier{mockID1, mockID2, mockID3}
+		r.objIds = map[string]arch.ObjIdentifier{
+			mockID1.ID(): mockID1,
+			mockID2.ID(): mockID2,
+			mockID3.ID(): mockID3,
+		}
 
 		// 调用 All 函数
 		identifiers := r.All()
@@ -148,7 +151,7 @@ func TestRadixTree_All(t *testing.T) {
 func TestRadixTree_Walk(t *testing.T) {
 	t.Run("Walk with Objects", func(t *testing.T) {
 		// 创建 RadixTree 实例
-		r := &RadixTree{Tree: radix.NewTree()}
+		r := NewRadixTree()
 
 		// 创建一些 MockObject 和 MockIdentifier 并插入到 RadixTree 中
 		mockID1 := &MockIdentifier{IDVal: "id1"}
@@ -176,7 +179,7 @@ func TestRadixTree_Walk(t *testing.T) {
 
 	t.Run("Walk with Error", func(t *testing.T) {
 		// 创建 RadixTree 实例
-		r := &RadixTree{Tree: radix.NewTree()}
+		r := NewRadixTree()
 
 		// 创建一个 MockObject 并插入到 RadixTree 中
 		mockID := &MockIdentifier{IDVal: "id1"}
@@ -195,7 +198,7 @@ func TestRadixTree_Walk(t *testing.T) {
 
 	t.Run("Walk with No Objects", func(t *testing.T) {
 		// 创建 RadixTree 实例
-		r := &RadixTree{Tree: radix.NewTree()}
+		r := NewRadixTree()
 
 		// 创建回调函数，用于记录回调的次数
 		var callbackCount int
@@ -216,7 +219,7 @@ func TestRadixTree_Walk(t *testing.T) {
 func TestRadixTree_GetObjects(t *testing.T) {
 	t.Run("Get Objects with Valid IDs", func(t *testing.T) {
 		// 创建 RadixTree 实例
-		r := &RadixTree{Tree: radix.NewTree()}
+		r := NewRadixTree()
 
 		// 创建一些 MockObject 和 MockIdentifier 并插入到 RadixTree 中
 		mockID1 := &MockIdentifier{IDVal: "id1"}
@@ -254,7 +257,7 @@ func TestRadixTree_GetObjects(t *testing.T) {
 
 	t.Run("Get Objects with Invalid IDs", func(t *testing.T) {
 		// 创建 RadixTree 实例
-		r := &RadixTree{Tree: radix.NewTree()}
+		r := NewRadixTree()
 
 		// 创建一些 MockObject 和 MockIdentifier 并插入到 RadixTree 中
 		mockID1 := &MockIdentifier{IDVal: "id1"}

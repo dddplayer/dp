@@ -188,6 +188,13 @@ func (mp *MockPosition) Column() int {
 	return mp.ColumnVal
 }
 
+func (mp *MockPosition) IsEqual(pos arch.Position) bool {
+	return mp.Filename() == pos.Filename() &&
+		mp.Offset() == pos.Offset() &&
+		mp.Line() == pos.Line() &&
+		mp.Column() == pos.Column()
+}
+
 type MockRelationRepository struct {
 	relations []arch.Relation
 }

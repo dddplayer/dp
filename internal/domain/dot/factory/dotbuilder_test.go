@@ -191,7 +191,7 @@ func TestDotBuilder_buildEdge(t *testing.T) {
 		To:      valueobject.PortStr(dummyEdge.ToVal),
 		Tooltip: fmt.Sprintf("%s -> %s: \n\n%s", path.Base(dummyEdge.FromVal), path.Base(dummyEdge.ToVal), ConcatenateRelationPos([]arch.RelationPos{})), // 假设传入空的关系位置
 		L:       "1",
-		T:       "dotted",
+		T:       "solid",
 		A:       string(dot.EdgeArrowHeadNormal), // 假设关系类型为 Dependency
 	}
 

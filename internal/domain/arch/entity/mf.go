@@ -132,7 +132,6 @@ func (mf *MessageFlow) buildDiagram() (*Diagram, error) {
 	}
 
 	var preIdentifier arch.ObjIdentifier
-	visitedRelation := make(map[string]struct{})
 
 	for _, p := range dirFilter.paths {
 		for _, n := range p {
@@ -151,14 +150,9 @@ func (mf *MessageFlow) buildDiagram() (*Diagram, error) {
 
 			fromId := preIdentifier.ID()
 			toId := current.ID()
-			visitedKey := fmt.Sprintf("from:%s to:%s", fromId, toId)
-			if _, visited := visitedRelation[visitedKey]; !visited {
-				if err := g.AddRelations(fromId, toId, metas); err != nil {
-					return nil, err
-				}
-				visitedRelation[visitedKey] = struct{}{}
+			if err := g.AddRelations(fromId, toId, metas); err != nil {
+				return nil, err
 			}
-
 			preIdentifier = current
 		}
 	}
