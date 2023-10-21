@@ -58,7 +58,8 @@ func newMockRepository() *mockObjRepository {
 }
 
 type mockObjRepository struct {
-	data map[arch.ObjIdentifier]arch.Object
+	data          map[arch.ObjIdentifier]arch.Object
+	ErrorStatusOn bool
 }
 
 func (r *mockObjRepository) Clear() {
@@ -74,10 +75,19 @@ func (r *mockObjRepository) Find(id arch.ObjIdentifier) arch.Object {
 	return nil
 }
 
+func (r *mockObjRepository) OpenErrStatus() {
+	r.ErrorStatusOn = true
+}
+
+func (r *mockObjRepository) CloseErrStatus() {
+	r.ErrorStatusOn = false
+}
+
 func (r *mockObjRepository) Insert(obj arch.Object) error {
-	if r.data[obj.Identifier()] != nil {
-		return fmt.Errorf("object %v already exists", obj.Identifier())
+	if r.ErrorStatusOn {
+		return fmt.Errorf("insert failed")
 	}
+
 	r.data[obj.Identifier()] = obj
 	return nil
 }

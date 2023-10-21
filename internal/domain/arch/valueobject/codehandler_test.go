@@ -49,6 +49,7 @@ func TestDomainModel_HandleClass(t *testing.T) {
 	}
 
 	// call handleClass method
+	repo.OpenErrStatus()
 	dm.handleClass(id, pos)
 
 	// check if the repository was called with the correct object
@@ -59,6 +60,76 @@ func TestDomainModel_HandleClass(t *testing.T) {
 	if len(dm.errors) != 1 {
 		t.Errorf("Expected 1 error, but got %v", len(dm.errors))
 	}
+}
+
+func TestDomainModel_HandleClass_MissingReceiver(t *testing.T) {
+	// mock Repository
+	repo := newMockRepository()
+
+	// create Handler
+	dm := &CodeHandler{Scope: "Test Model", ObjRepo: repo}
+
+	// create identifier and position
+	id := &ident{name: "MyClass", pkg: "domain/myclass"}
+	pos := &pos{filename: "myclass.go", offset: 10, line: 5, column: 15}
+
+	// Create a MissingReceiver with some methods
+	missingReceiver := &MissingReceiver{
+		obj: &obj{
+			id:  id,
+			pos: pos,
+		},
+		methods: []*ident{
+			&ident{name: "Method1", pkg: "domain/myclass"},
+			&ident{name: "Method2", pkg: "domain/myclass"},
+		},
+	}
+
+	// Add the MissingReceiver to the repository
+	_ = repo.Insert(missingReceiver)
+
+	// call handleClass method
+	dm.handleClass(id, pos)
+
+	if len(dm.errors) != 0 {
+		t.Errorf("Expected 0 errors, but got %v", len(dm.errors))
+	}
+
+	// Now you should test that the methods from MissingReceiver are added to the Class.
+	// You can do this by checking the Class object in the repository.
+
+	// Check if the repository was called with the correct object
+	if len(repo.data) != 1 {
+		t.Errorf("Expected repository to have 1 object, but got %v", len(repo.data))
+	}
+
+	var obj arch.Object
+	for _, o := range repo.data {
+		obj = o
+		break
+	}
+
+	if _, ok := obj.(*Class); !ok {
+		t.Errorf("Expected object in repository to be a Class, but got %T", obj)
+	}
+
+	class := obj.(*Class)
+	if class.obj.id.name != id.name || class.obj.id.pkg != id.pkg {
+		t.Errorf("Expected object in repository to have id %v, but got %v", id, class.obj.id)
+	}
+
+	if class.obj.pos.filename != pos.filename ||
+		class.obj.pos.offset != pos.offset || class.obj.pos.line != pos.line ||
+		class.obj.pos.column != pos.column {
+		t.Errorf("Expected object in repository to have pos %v, but got %v", pos, class.obj.pos)
+	}
+
+	// Check that the methods from MissingReceiver were added to the Class
+	if len(class.methods) != 2 {
+		t.Errorf("Expected 2 methods in Class, but got %v", len(class.methods))
+	}
+
+	// Add checks for the specific methods if needed.
 }
 
 func TestDomainModel_HandleAttribute(t *testing.T) {
@@ -94,6 +165,7 @@ func TestDomainModel_HandleAttribute(t *testing.T) {
 		t.Errorf("Expected parent Class to have 1 attribute, but got %v", len(parentClass.attrs))
 	}
 
+	repo.OpenErrStatus()
 	// call handleAttribute method with an error-prone repository
 	dm.handleAttribute(id, pos, pid)
 
@@ -148,6 +220,7 @@ func TestDomainModel_HandleGenObj(t *testing.T) {
 		t.Errorf("Expected object in repository to have pos %v, but got %v", pos, genObj.obj.pos)
 	}
 
+	repo.OpenErrStatus()
 	dm.handleGenObj(id, pos)
 	// check if an error was pushed to the errors slice
 	if len(dm.errors) != 1 {
@@ -200,6 +273,7 @@ func TestDomainModel_HandleFunc(t *testing.T) {
 		t.Errorf("Expected object in repository to have pos %v, but got %v", pos, fn.obj.pos)
 	}
 
+	repo.OpenErrStatus()
 	dm.handleFunc(id, pos, nil, nil)
 	// check if an error was pushed to the errors slice
 	if len(dm.errors) != 1 {
@@ -209,6 +283,63 @@ func TestDomainModel_HandleFunc(t *testing.T) {
 	// check if the repository was not called (no object inserted)
 	if len(repo.data) != 1 {
 		t.Errorf("Expected repository to still have 1 object, but got %v", len(repo.data))
+	}
+}
+
+func TestDomainModel_HandleFunc_MissingReceiver(t *testing.T) {
+	// mock Repository
+	repo := newMockRepository()
+
+	// create Handler
+	dm := &CodeHandler{Scope: "Test Model", ObjRepo: repo}
+
+	// create identifier and position for the function
+	id := &ident{name: "myFunction", pkg: "domain/myFunction"}
+	fpos := &pos{filename: "myFunction.go", offset: 10, line: 5, column: 15}
+
+	// create identifier and position for the parent (Receiver)
+	pid := &ident{name: "MyClass", pkg: "domain/myclass"}
+	parentPos := &pos{filename: "myclass.go", offset: 20, line: 8, column: 25}
+
+	// call handleFunc method
+	dm.handleFunc(id, fpos, pid, parentPos)
+
+	// Check if the repository was called with the correct Function object
+	if len(repo.data) != 2 {
+		t.Errorf("Expected repository to have 2 object, but got %v", len(repo.data))
+	}
+
+	var obj *MissingReceiver
+	for _, o := range repo.data {
+		if m, ok := o.(*MissingReceiver); ok {
+			obj = m
+			break
+		}
+	}
+
+	if len(obj.methods) != 1 {
+		t.Errorf("Expected object in repository to have 1 method, but got %v", len(obj.methods))
+	}
+
+	// create identifier and position for the function
+	id2 := &ident{name: "myFunction2", pkg: "domain/myFunction2"}
+	fpos2 := &pos{filename: "myFunction2.go", offset: 10, line: 5, column: 15}
+
+	dm.handleFunc(id2, fpos2, pid, parentPos)
+
+	if len(obj.methods) != 2 {
+		t.Errorf("Expected object in repository to have 2 method, but got %v", len(obj.methods))
+	}
+
+	// create identifier and position for the parent (Receiver)
+	pid2 := &ident{name: "MyClass2", pkg: "domain/myclass2"}
+	parentPos2 := &pos{filename: "myclass2.go", offset: 20, line: 8, column: 25}
+
+	repo.OpenErrStatus()
+	dm.handleFunc(id2, fpos2, pid2, parentPos2)
+
+	if len(dm.errors) != 1 {
+		t.Errorf("Expected 1 error, but got %v", len(dm.errors))
 	}
 }
 
@@ -286,6 +417,7 @@ func TestDomainModel_HandleInterface(t *testing.T) {
 		t.Errorf("Expected object in repository to have pos %v, but got %v", pos, iface.obj.pos)
 	}
 
+	repo.OpenErrStatus()
 	// call handleInterface method with an error-prone repository
 	dm.handleInterface(id, pos)
 
@@ -333,6 +465,7 @@ func TestDomainModel_HandleInterfaceMethod(t *testing.T) {
 		t.Errorf("Expected parent Interface to have 1 method, but got %v", len(parentInterface.methods))
 	}
 
+	repo.OpenErrStatus()
 	// call handleInterfaceMethod method with an error-prone repository
 	dm.handleInterfaceMethod(id, pos, pid)
 

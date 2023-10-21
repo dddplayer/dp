@@ -104,3 +104,38 @@ func TestEmptyPosition(t *testing.T) {
 		t.Errorf("Empty position is not as expected:\nGot: %v", emptyPos)
 	}
 }
+
+func TestIsEqual(t *testing.T) {
+	// 创建两个 pos 结构体实例进行比较
+	pos1 := &pos{
+		filename: "file.txt",
+		offset:   100,
+		line:     10,
+		column:   5,
+	}
+
+	pos2 := &pos{
+		filename: "file.txt",
+		offset:   100,
+		line:     10,
+		column:   5,
+	}
+
+	// 创建一个 pos 结构体实例，模拟一个不相等的位置
+	pos3 := &pos{
+		filename: "other.txt",
+		offset:   200,
+		line:     15,
+		column:   2,
+	}
+
+	// 测试相等的情况
+	if !pos1.IsEqual(pos2) {
+		t.Errorf("Expected pos1 to be equal to pos2")
+	}
+
+	// 测试不相等的情况
+	if pos1.IsEqual(pos3) {
+		t.Errorf("Expected pos1 not to be equal to pos3")
+	}
+}
