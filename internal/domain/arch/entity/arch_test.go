@@ -60,6 +60,26 @@ func TestArch_BuildDirectory(t *testing.T) {
 	}
 }
 
+func TestArch_BuildDirectory_Error(t *testing.T) {
+	mockRepo := newMockObjectRepoWithInvalidDir()
+
+	arc := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			ObjRepo: mockRepo,
+		},
+		relationDigraph: &RelationDigraph{},
+		directory:       nil, // Initialize directory as nil for testing purposes
+	}
+
+	// Call the buildDirectory method
+	err := arc.buildDirectory()
+
+	// Check for errors
+	if err == nil {
+		t.Error("Expected error, but got nil")
+	}
+}
+
 func TestBuildOriginGraph(t *testing.T) {
 	claObj1 := newMockObject(1)
 	claObj2 := newMockObject(2)
@@ -375,6 +395,7 @@ func TestStrategicGraph(t *testing.T) {
 		CodeHandler: &valueobject.CodeHandler{
 			ObjRepo: mockRepo,
 			RelRepo: mockRelRepo,
+			Scope:   "test",
 		},
 		relationDigraph: nil,
 		directory:       nil,
@@ -458,6 +479,146 @@ func TestDomainComponentRelations(t *testing.T) {
 	}
 	if totalEdges != 3 {
 		t.Errorf("Expected 8 edges, but got %d", totalEdges)
+	}
+}
+
+func TestDomainComponentRelations_DomainObjectError(t *testing.T) {
+	name := "TestDiagram"
+
+	mockDiagram, err := NewDiagram(name, arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	// Create some mock objects
+	domain := "TestDomain"
+	funcObj0 := newMockObjectFunction(0)
+	funcObj1 := newMockDomainFunction(domain, newMockObjectFunction(1))
+
+	// Add the mock objects to the Diagram
+	_ = mockDiagram.AddObj(funcObj0)
+	_ = mockDiagram.AddObj(funcObj1)
+	mockDiagram.objs = append(mockDiagram.objs, funcObj0, funcObj1)
+
+	// Create a new RelationDigraph instance
+	g := &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+
+	mockArch := &Arch{
+		CodeHandler:     &valueobject.CodeHandler{},
+		relationDigraph: g,
+		directory:       nil,
+	}
+
+	err = mockArch.domainComponentRelations(mockDiagram)
+	if err == nil {
+		t.Errorf("Expected error occurs, but got nil")
+	}
+
+	mockDiagram, err = NewDiagram(name, arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	// Create some mock objects
+	funcObj2 := newMockDomainFunction(domain, newMockObjectFunction(2))
+	funcObj3 := newMockObjectFunction(3)
+
+	// Add the mock objects to the Diagram
+	_ = mockDiagram.AddObj(funcObj2)
+	_ = mockDiagram.AddObj(funcObj3)
+	mockDiagram.objs = append(mockDiagram.objs, funcObj2, funcObj3)
+
+	// Create a new RelationDigraph instance
+	g = &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+
+	mockArch = &Arch{
+		CodeHandler:     &valueobject.CodeHandler{},
+		relationDigraph: g,
+		directory:       nil,
+	}
+
+	err = mockArch.domainComponentRelations(mockDiagram)
+	if err == nil {
+		t.Errorf("Expected error occurs, but got nil")
+	}
+}
+
+func TestDomainComponentRelations_RelationMetaError(t *testing.T) {
+	name := "TestDiagram"
+	mockDiagram, err := NewDiagram(name, arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	// Create some mock objects
+	domain := "TestDomain"
+	funcObj0 := newMockDomainFunction(domain, newMockObjectFunction(0))
+	funcObj1 := newMockDomainFunction(domain, newMockObjectFunction(1))
+
+	// Add the mock objects to the Diagram
+	_ = mockDiagram.AddObj(funcObj0)
+	_ = mockDiagram.AddObj(funcObj1)
+	mockDiagram.objs = append(mockDiagram.objs, funcObj0, funcObj1)
+
+	// Create a new RelationDigraph instance
+	g := &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+
+	mockArch := &Arch{
+		CodeHandler:     &valueobject.CodeHandler{},
+		relationDigraph: g,
+		directory:       nil,
+	}
+
+	err = mockArch.domainComponentRelations(mockDiagram)
+	if err == nil {
+		t.Errorf("Expected error occurs, but got nil")
+	}
+
+}
+
+func TestDomainComponentRelations_RelationError(t *testing.T) {
+	name := "TestDiagram"
+	mockDiagram, err := NewDiagram(name, arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	// Create some mock objects
+	domain := "TestDomain"
+	funcObj0 := newMockDomainFunction(domain, newMockObjectFunction(0))
+	funcObj1 := newMockDomainFunction(domain, newMockObjectFunction(1))
+
+	// Add the mock objects to the Diagram
+	mockDiagram.objs = append(mockDiagram.objs, funcObj0, funcObj1)
+
+	// Create a new RelationDigraph instance
+	g := &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+	// Add the mock ObjIdentifier objects to the graph
+	err = g.AddObj(funcObj0.OriginIdentifier())
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	err = g.AddObj(funcObj1.OriginIdentifier())
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	// Create edges for testing
+	_ = g.AddEdge(funcObj0.OriginIdentifier().ID(), funcObj1.OriginIdentifier().ID(), arch.RelationTypeComposition, valueobject.NewEmptyRelationPos())
+
+	mockArch := &Arch{
+		CodeHandler:     &valueobject.CodeHandler{},
+		relationDigraph: g,
+		directory:       nil,
+	}
+
+	err = mockArch.domainComponentRelations(mockDiagram)
+	if err == nil {
+		t.Errorf("Expected error occurs, but got nil")
 	}
 }
 
@@ -549,6 +710,7 @@ func TestTacticGraph(t *testing.T) {
 		CodeHandler: &valueobject.CodeHandler{
 			ObjRepo: mockRepo,
 			RelRepo: mockRelRepo,
+			Scope:   "test",
 		},
 		relationDigraph: nil,
 		directory:       nil,

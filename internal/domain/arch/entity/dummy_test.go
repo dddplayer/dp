@@ -212,6 +212,18 @@ func (mrr *MockRelationRepository) Walk(walker func(rel arch.Relation) error) {
 	}
 }
 
+func newMockObjectRepoWithInvalidDir() *MockObjectRepository {
+	claObj1 := newMockObjectWithId("test", "cla1", 1)
+	claObj2 := newMockObjectWithId("tex", "cla2", 1)
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	_ = mockRepo.Insert(claObj1)
+	_ = mockRepo.Insert(claObj2)
+	return mockRepo
+}
+
 type MockObjectRepository struct {
 	objects map[string]arch.Object
 	idents  []arch.ObjIdentifier
@@ -550,10 +562,23 @@ func newTestMockObject() *MockObject {
 func newMockObject(id int) *MockObject {
 	return &MockObject{
 		id: &MockObjIdentifier{
-			id:   fmt.Sprintf("testpackage/MockObject_%d", id),
-			name: fmt.Sprintf("MockObject_%d", id),
-			dir:  "testpackage"},
+			id:                     fmt.Sprintf("testpackage/MockObject_%d", id),
+			name:                   fmt.Sprintf("MockObject_%d", id),
+			dir:                    "testpackage",
+			NameSeparatorLengthVal: 1,
+		},
 		name:     fmt.Sprintf("MockObject_%d", id),
+		position: &MockPosition{FilenameVal: fmt.Sprintf("mockfile_%d", id), OffsetVal: 10, LineVal: 5, ColumnVal: 2},
+	}
+}
+
+func newMockObjectWithStr(id string) *MockObject {
+	return &MockObject{
+		id: &MockObjIdentifier{
+			id:   fmt.Sprintf("testpackage/MockObject_%s", id),
+			name: fmt.Sprintf("MockObject_%s", id),
+			dir:  "testpackage"},
+		name:     fmt.Sprintf("MockObject_%s", id),
 		position: &MockPosition{FilenameVal: "mockfile", OffsetVal: 10, LineVal: 5, ColumnVal: 2},
 	}
 }

@@ -95,7 +95,7 @@ func FindCommonRootDirectory(filePaths []string) string {
 
 	// 对比所有路径，找出共同的根目录
 	for _, filePath := range filePaths {
-		for !strings.HasPrefix(filePath, rootPath) {
+		if !strings.HasPrefix(filePath, rootPath) {
 			rootPath = filepath.Dir(rootPath)
 		}
 	}

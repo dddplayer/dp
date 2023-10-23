@@ -5,6 +5,7 @@ import (
 	"github.com/dddplayer/dp/internal/domain/arch"
 	"github.com/dddplayer/dp/internal/domain/arch/valueobject"
 	"github.com/dddplayer/dp/pkg/datastructure/directed"
+	"strings"
 	"testing"
 )
 
@@ -30,6 +31,14 @@ func TestNewDiagram(t *testing.T) {
 
 	if len(diagram.objs) != 0 {
 		t.Errorf("Expected Diagram to be empty, but it contains %d objects", len(diagram.objs))
+	}
+}
+
+func TestNewDiagram_Error(t *testing.T) {
+	name := ""
+	_, err := NewDiagram(name, arch.TableDiagram)
+	if err == nil {
+		t.Error("Expected error, but got nil")
 	}
 }
 
@@ -235,6 +244,29 @@ func TestDiagram_AddRelations(t *testing.T) {
 	}
 }
 
+func TestDiagram_AddRelations_Error(t *testing.T) {
+	diagram, err := NewDiagram("TestDiagram", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	// Create two mock objects
+	mockObject1 := newMockObject(1)
+	mockObject2 := newMockObject(2)
+
+	// Define the relation metas
+	relations := []arch.RelationMeta{
+		valueobject.NewRelationMeta(arch.RelationTypeAggregationRoot, mockObject1.position, mockObject2.position),
+		valueobject.NewRelationMeta(arch.RelationTypeImplementation, mockObject1.position, mockObject2.position),
+	}
+
+	// Call the AddRelations function to add the relations
+	err = diagram.AddRelations(mockObject1.Identifier().ID(), mockObject2.Identifier().ID(), relations)
+	if err == nil {
+		t.Error("Expected error, but got nil")
+	}
+}
+
 func TestDiagram_Name(t *testing.T) {
 	// Create a new Diagram
 	diagram, err := NewDiagram("TestDiagram", arch.TableDiagram)
@@ -249,6 +281,23 @@ func TestDiagram_Name(t *testing.T) {
 	expectedName := "TestDiagram"
 	if name != expectedName {
 		t.Errorf("Expected name '%s', but got '%s'", expectedName, name)
+	}
+}
+
+func TestDiagram_Type(t *testing.T) {
+	// Create a new Diagram
+	diagram, err := NewDiagram("TestDiagram", arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	// Call the Name method to retrieve the name
+	tp := diagram.Type()
+
+	// Check if the name matches the expected value
+	expectedType := arch.TableDiagram
+	if tp != expectedType {
+		t.Errorf("Expected type '%v', but got '%v'", expectedType, tp)
 	}
 }
 
@@ -719,9 +768,10 @@ func TestEdgesMerge(t *testing.T) {
 	edge2 := newEdge(mockObject2.ID(), mockObject3.ID(), arch.RelationTypeComposition, mockObject2.Position(), mockObject3.Position())
 	edge3 := newEdge(mockObject3.ID(), mockObject4.ID(), arch.RelationTypeAssociation, mockObject3.Position(), mockObject4.Position())
 	edge4 := newEdge(mockObject1.ID(), mockObject2.ID(), arch.RelationTypeAggregation, mockObject1.Position(), mockObject2.Position())
+	edge5 := newEdge(mockObject1.ID(), mockObject2.ID(), arch.RelationTypeAggregation, mockObject1.Position(), mockObject3.Position())
 
 	// Create a slice of edges and merge them
-	edges := edges{edge1, edge2, edge3, edge4}
+	edges := edges{edge1, edge2, edge3, edge4, edge5}
 	mergedEdges := edges.merge()
 
 	// Check the merged edges
@@ -737,11 +787,11 @@ func TestEdgesMerge(t *testing.T) {
 			if me.Type() != arch.RelationTypeAggregation {
 				t.Errorf("Expected Type() of merged edge 1 to be %d, but got %d", arch.RelationTypeAggregation, mergedEdges[0].Type())
 			}
-			if me.Count() != 2 {
-				t.Errorf("Expected Count() of merged edge 1 to be 2, but got %d", me.Count())
+			if me.Count() != 3 {
+				t.Errorf("Expected Count() of merged edge 1 to be 3, but got %d", me.Count())
 			}
-			if len(me.Pos()) != 1 {
-				t.Errorf("Expected Pos() of merged edge 1 to have 1 elements, but got %d", len(me.Pos()))
+			if len(me.Pos()) != 2 {
+				t.Errorf("Expected Pos() of merged edge 1 to have 2 elements, but got %d", len(me.Pos()))
 			}
 		} else if me.From() == mockObject2.ID() {
 			if me.To() != mockObject3.ID() {
@@ -791,8 +841,8 @@ func TestDiagram_ParseClassEdge(t *testing.T) {
 		t.Errorf("Expected no error, but got: %v", err)
 	}
 
-	mockObject1 := newMockObject(1)
-	mockObject2 := newMockObject(2)
+	mockObject1 := newMockObjectWithStr("1.obj2")
+	mockObject2 := newMockObject(1)
 	mockEle2 := newMockElement(2, newMockNode(5))
 	mockEle2.IDVal = mockObject2.ID()
 
@@ -832,11 +882,11 @@ func TestDiagram_ParseClassEdge(t *testing.T) {
 	if node.ID() != mockObject1.Identifier().ID() {
 		t.Errorf("Expected node ID to be %s, but got %s", mockObject1.Identifier().ID(), node.ID())
 	}
-	if node.Name() != mockObject1.Identifier().Name() {
+	if !strings.Contains(mockObject1.Identifier().Name(), node.Name()) {
 		t.Errorf("Expected node Name to be %s, but got %s", mockObject1.Identifier().Name(), node.Name())
 	}
-	if node.Color() != string(objColor(mockObject1)) {
-		t.Errorf("Expected node Color to be %s, but got %s", string(objColor(mockObject1)), node.Color())
+	if node.Color() != string(objColor(mockObject2)) {
+		t.Errorf("Expected node Color to be %s, but got %s", string(objColor(mockObject2)), node.Color())
 	}
 
 	// Verify that the element was updated with the node
@@ -998,9 +1048,18 @@ func TestDiagram_ParseSubDiagrams(t *testing.T) {
 
 	// Test Case 3: Object has Aggregation and Attribution relations
 	// Create directed edges representing Aggregation and Attribution relations
+	classObject := newMockEntity("test", 0)
+	mockNode3 := &directed.Node{Value: classObject, Edges: []*directed.Edge{}}
+
 	aggregationEdge := &directed.Edge{
 		From: mockNode1,
 		To:   mockNode2,
+		Type: arch.RelationTypeAggregation,
+		// Add other properties as needed.
+	}
+	classEdge := &directed.Edge{
+		From: mockNode1,
+		To:   mockNode3,
 		Type: arch.RelationTypeAggregation,
 		// Add other properties as needed.
 	}
@@ -1010,14 +1069,20 @@ func TestDiagram_ParseSubDiagrams(t *testing.T) {
 		Type: arch.RelationTypeAttribution,
 		// Add other properties as needed.
 	}
+	behaviorEdge := &directed.Edge{
+		From: mockNode1,
+		To:   mockNode2,
+		Type: arch.RelationTypeBehavior,
+		// Add other properties as needed.
+	}
 
 	// Add edges to mockNode1
-	mockNode1.Edges = append(mockNode1.Edges, aggregationEdge, attributionEdge)
+	mockNode1.Edges = append(mockNode1.Edges, aggregationEdge, attributionEdge, classEdge, behaviorEdge)
 
 	// Call parseSubDiagrams on mockNode1 again
 	subDiagram3 := diagram.parseSubDiagrams(mockNode1)
-	if len(subDiagram3.Nodes()) != 3 {
-		t.Errorf("Expected subDiagram1 to have 3 node, but got %d", len(subDiagram3.Nodes()))
+	if len(subDiagram3.Nodes()) != 5 {
+		t.Errorf("Expected subDiagram1 to have 5 node, but got %d", len(subDiagram3.Nodes()))
 		n := subDiagram3.Nodes()[0]
 		if n.ID() != aggregateObject.Identifier().ID() {
 			t.Errorf("Expected node ID to be %s, but got %s", aggregateObject.Identifier().ID(), n.ID())
@@ -1030,8 +1095,8 @@ func TestDiagram_ParseSubDiagrams(t *testing.T) {
 		}
 	}
 
-	if len(subDiagram3.Summary()) != 1 {
-		t.Errorf("Expected subDiagram3 to have 1 summary, but got %d", len(subDiagram3.Summary()))
+	if len(subDiagram3.Summary()) != 2 {
+		t.Errorf("Expected subDiagram3 to have 2 summary, but got %d", len(subDiagram3.Summary()))
 		e := subDiagram3.Summary()[0]
 		if e.ID() != aggregateObject.Identifier().ID() {
 			t.Errorf("Expected summary ID to be %s, but got %s", aggregateObject.Identifier().ID(), e.ID())
@@ -1090,6 +1155,55 @@ func TestDiagram_SubDiagrams(t *testing.T) {
 	for i, sd := range subDiagrams {
 		if sd.Name() != expectedNames[i] {
 			t.Errorf("Expected sub-diagram %d to have name %s, but got %s", i+1, expectedNames[i], sd.Name())
+		}
+	}
+}
+
+func TestSubDiagram_SubGraphs(t *testing.T) {
+	sd := &subDiagram{
+		name:      "TestSubDiagram",
+		nodes:     []arch.Node{},
+		elements:  []arch.Element{},
+		subGraphs: []arch.SubDiagram{},
+	}
+
+	subGraphs := sd.SubGraphs()
+
+	if len(subGraphs) != len(sd.subGraphs) {
+		t.Errorf("Expected %d sub-graphs, but got %d", len(sd.subGraphs), len(subGraphs))
+	}
+}
+
+func TestSubDiagram_FindElement(t *testing.T) {
+	e1 := newMockElement(1, newMockNode(5))
+	e2 := newMockElement(2, newMockNode(6))
+	e3 := newMockElement(3, newMockNode(7))
+
+	sd := &subDiagram{
+		name:      "TestSubDiagram",
+		nodes:     []arch.Node{},
+		elements:  []arch.Element{e1, e2, e3},
+		subGraphs: []arch.SubDiagram{},
+	}
+
+	testCases := []struct {
+		id          string
+		expected    arch.Element
+		shouldExist bool
+	}{
+		{e1.ID(), e1, true},
+		{"element4", nil, false},
+	}
+
+	for _, tc := range testCases {
+		result := sd.findElement(tc.id)
+
+		if tc.shouldExist && result == nil {
+			t.Errorf("Element with ID %s should exist but is not found", tc.id)
+		}
+
+		if !tc.shouldExist && result != nil {
+			t.Errorf("Element with ID %s should not exist but is found", tc.id)
 		}
 	}
 }

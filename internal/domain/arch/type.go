@@ -135,7 +135,6 @@ type SubDiagram interface {
 	Nodes() []Node
 	Summary() []Element
 	SubGraphs() []SubDiagram
-	Print()
 }
 
 type Node interface {

@@ -264,17 +264,6 @@ func (sd *subDiagram) findElement(id string) arch.Element {
 	return nil
 }
 
-func (sd *subDiagram) Print() {
-	fmt.Println("SubDiagram name:", sd.Name())
-	nodes := sd.Nodes()
-	for _, node := range nodes {
-		fmt.Println("Node :", node.Name(), node.Color())
-	}
-	for _, sd := range sd.SubGraphs() {
-		sd.Print()
-	}
-}
-
 type node struct {
 	id    string
 	name  string
@@ -423,44 +412,4 @@ func (es edges) merge() []*mergedEdge {
 	}
 
 	return mergedEdgesArray
-}
-
-func (g *Diagram) Print() {
-	visitedNodes := make(map[*directed.Node]bool)
-	visitedEdges := make(map[*directed.Edge]bool)
-
-	fmt.Println("Nodes:")
-	for _, node := range g.Nodes {
-		g.printNode(node, visitedNodes)
-	}
-
-	fmt.Println("Edges:")
-	for _, node := range g.Nodes {
-		g.printEdges(node, visitedEdges)
-	}
-}
-
-func (g *Diagram) printNode(node *directed.Node, visitedNodes map[*directed.Node]bool) {
-	if visitedNodes[node] {
-		return
-	}
-
-	visitedNodes[node] = true
-	fmt.Printf("Key: %s, Value: %v\n", node.Key, node.Value)
-
-	for _, edge := range node.Edges {
-		g.printNode(edge.To, visitedNodes)
-	}
-}
-
-func (g *Diagram) printEdges(node *directed.Node, visitedEdges map[*directed.Edge]bool) {
-	for _, edge := range node.Edges {
-		if visitedEdges[edge] {
-			return
-		}
-		visitedEdges[edge] = true
-
-		fmt.Printf("From: %s, To: %s, Value: %v\n", edge.From.Key, edge.To.Key, edge.Value)
-		g.printEdges(edge.To, visitedEdges)
-	}
 }

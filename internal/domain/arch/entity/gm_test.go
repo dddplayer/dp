@@ -158,7 +158,7 @@ func TestAddClass_Attr_ErrorCase(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected an error when object not found, but got nil")
 	}
-	expectedErrMsg := fmt.Sprintf("节点键冲突：%s", mockAttr.Identifier().ID())
+	expectedErrMsg := fmt.Sprintf("key conflict: %s", mockAttr.Identifier().ID())
 	if err.Error() != expectedErrMsg {
 		t.Errorf("Expected error message '%s', but got '%v'", expectedErrMsg, err)
 	}
@@ -199,7 +199,7 @@ func TestAddClass_Method_ErrorCase(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected an error when object not found, but got nil")
 	}
-	expectedErrMsg := fmt.Sprintf("节点键冲突：%s", mockMethod.Identifier().ID())
+	expectedErrMsg := fmt.Sprintf("key conflict: %s", mockMethod.Identifier().ID())
 	if err.Error() != expectedErrMsg {
 		t.Errorf("Expected error message '%s', but got '%v'", expectedErrMsg, err)
 	}

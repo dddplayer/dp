@@ -111,8 +111,8 @@ func TestGraph_AddNode(t *testing.T) {
 	err = graph.AddNode(key2, value2)
 	if err == nil {
 		t.Error("Expected an error for adding a node with a conflicting key, but got no error")
-	} else if err.Error() != fmt.Sprintf("节点键冲突：%s", key2) {
-		t.Errorf("Expected error message '节点键冲突：%s', but got: %v", key2, err)
+	} else if err.Error() != fmt.Sprintf("key conflict: %s", key2) {
+		t.Errorf("Expected error message 'key conflict: %s', but got: %v", key2, err)
 	}
 
 	// 验证图中的节点数量没有增加

@@ -37,21 +37,22 @@ func NewNode(k string, v any) *Node {
 }
 
 func (g *Graph) AddNode(key string, value any) error {
-	// 检查节点键是否冲突
+	if key == "" {
+		return fmt.Errorf("key cannot be empty")
+	}
+
 	for _, node := range g.Nodes {
 		if node.Key == key {
-			return fmt.Errorf("节点键冲突：%s", key)
+			return fmt.Errorf("key conflict: %s", key)
 		}
 	}
 
-	// 创建新节点
 	newNode := &Node{
 		Key:   key,
 		Value: value,
 		Edges: []*Edge{},
 	}
 
-	// 将新节点添加到图中
 	g.Nodes = append(g.Nodes, newNode)
 	return nil
 }
