@@ -10,6 +10,11 @@ import (
 )
 
 func TestNewDiagram(t *testing.T) {
+	_, err := NewDiagram("", arch.TableDiagram)
+	if err == nil {
+		t.Error("Expected error, but got nil")
+	}
+
 	name := "TestDiagram"
 	diagram, err := NewDiagram(name, arch.TableDiagram)
 	if err != nil {

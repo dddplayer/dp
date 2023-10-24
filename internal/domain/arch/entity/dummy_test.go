@@ -224,6 +224,19 @@ func newMockObjectRepoWithInvalidDir() *MockObjectRepository {
 	return mockRepo
 }
 
+func newMockObjRepoWithDuplicatedIdent() *MockObjectRepository {
+	claObj1 := newMockObject(1)
+	claObj2 := newMockObject(2)
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	_ = mockRepo.Insert(claObj1)
+	_ = mockRepo.Insert(claObj2)
+	mockRepo.idents = append(mockRepo.idents, claObj1.Identifier())
+	return mockRepo
+}
+
 type MockObjectRepository struct {
 	objects map[string]arch.Object
 	idents  []arch.ObjIdentifier

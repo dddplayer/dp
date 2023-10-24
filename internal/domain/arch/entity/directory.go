@@ -2,7 +2,6 @@ package entity
 
 import (
 	"errors"
-	"fmt"
 	"github.com/dddplayer/dp/internal/domain/arch"
 	"github.com/dddplayer/dp/pkg/datastructure/directory"
 	"path"
@@ -11,12 +10,14 @@ import (
 )
 
 type Directory struct {
-	root *directory.TreeNode
+	root     *directory.TreeNode
+	walkErrs []error
 }
 
 func NewDirectory(paths []string) *Directory {
 	return &Directory{
-		root: directory.BuildDirectoryTree(paths),
+		root:     directory.BuildDirectoryTree(paths),
+		walkErrs: []error{},
 	}
 }
 
@@ -88,26 +89,41 @@ func (d *Directory) HexagonDirectory(dir string) arch.HexagonDirectory {
 func (d *Directory) WalkDir(dir string, cb func(string, []arch.ObjIdentifier) error) {
 	targetDir, err := d.getTargetDir(dir)
 	if err != nil {
-		fmt.Println(err.Error())
+		d.walkErrs = append(d.walkErrs, err)
+		return
 	}
 
 	if node := d.root.GetNode(targetDir); node != nil {
-		directory.Walk(node, func(dir string, val any) error {
+		directory.Walk(node, func(dir string, val any) {
 			if val != nil {
-				return cb(dir, val.([]arch.ObjIdentifier))
+				if err := cb(dir, val.([]arch.ObjIdentifier)); err != nil {
+					d.walkErrs = append(d.walkErrs, err)
+				}
+			} else {
+				if err := cb(dir, nil); err != nil {
+					d.walkErrs = append(d.walkErrs, err)
+				}
 			}
-			return cb(dir, nil)
 		})
 	}
 }
 
 func (d *Directory) WalkRootDir(cb func(string, []arch.ObjIdentifier) error) {
-	directory.Walk(d.root, func(dir string, val any) error {
+	directory.Walk(d.root, func(dir string, val any) {
 		if val != nil {
-			return cb(dir, val.([]arch.ObjIdentifier))
+			if err := cb(dir, val.([]arch.ObjIdentifier)); err != nil {
+				d.walkErrs = append(d.walkErrs, err)
+			}
+		} else {
+			if err := cb(dir, nil); err != nil {
+				d.walkErrs = append(d.walkErrs, err)
+			}
 		}
-		return cb(dir, nil)
 	})
+}
+
+func (d *Directory) WalkErrs() []error {
+	return d.walkErrs
 }
 
 func (d *Directory) ParentDir(dir string) string {

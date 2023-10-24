@@ -34,10 +34,7 @@ func TestSummaryNodeEdges(t *testing.T) {
 	g.Nodes = append(g.Nodes, nodeA, nodeB, nodeC, nodeD)
 
 	// Call the method being tested
-	edges, err := g.obtainEdgesFromNodeTree(nodeA)
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
+	edges := g.obtainEdgesFromNodeTree(nodeA)
 
 	// Assert the expected edges
 	expectedEdges := []*directed.Edge{edgeAB, edgeBC, edgeCD}
@@ -49,6 +46,30 @@ func TestSummaryNodeEdges(t *testing.T) {
 		if !slices.Contains(expectedEdges, edges[i]) {
 			t.Errorf("Expected edge %v not found", edges[i])
 		}
+	}
+}
+
+func TestSummaryNodeEdges_Error(t *testing.T) {
+	g := &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+
+	nodeA := &MockObjIdentifier{
+		id:   "123",
+		name: "TestObject",
+		dir:  "/path/to/objectA",
+	}
+	nodeB := &MockObjIdentifier{
+		id:   "456",
+		name: "TestObject",
+		dir:  "/path/to/objeB",
+	}
+
+	// Call the method being tested
+	_, err := g.SummaryRelationMetas(nodeA, nodeB)
+
+	if err == nil {
+		t.Error("Expected error, but got nil")
 	}
 }
 
@@ -186,6 +207,14 @@ func TestAddRelation(t *testing.T) {
 	mockPosition2 := &MockPosition{FilenameVal: "file2", OffsetVal: 10, LineVal: 5, ColumnVal: 2}
 	objB := MockObject{id: mockIdentifier2, position: mockPosition2}
 
+	mockIdentifier3 := &MockObjIdentifier{
+		id:   "C",
+		name: "ObjectC",
+		dir:  "/path/to/objectC",
+	}
+	mockPosition3 := &MockPosition{FilenameVal: "file3", OffsetVal: 10, LineVal: 5, ColumnVal: 2}
+	objC := MockObject{id: mockIdentifier3, position: mockPosition3}
+
 	// Add the mock ObjIdentifier objects to the graph
 	err := g.AddObj(objA)
 	if err != nil {
@@ -241,9 +270,54 @@ func TestAddRelation(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
+	// Create mock Relation objects for testing
+	depRelNone := &MockDependenceRelation{
+		from:      objC,
+		dependsOn: objB,
+	}
+	compRelNone := &MockCompositionRelation{
+		from:  objC,
+		child: objB,
+	}
+	embRelNone := &MockEmbeddingRelation{
+		from:     objC,
+		embedded: objB,
+	}
+	implRelNone := &MockImplementationRelation{
+		from:       objC,
+		implements: []arch.Object{objB},
+	}
+	assocRelNone := &MockAssociationRelation{
+		from:            objC,
+		refer:           objB,
+		associationType: arch.RelationTypeAssociationOneOne,
+	}
+
+	// Call the method being tested
+	err = g.AddRelation(depRelNone)
+	if err == nil {
+		t.Error("Expected error when adding relation, but got nil")
+	}
+	err = g.AddRelation(compRelNone)
+	if err == nil {
+		t.Error("Expected error when adding relation, but got nil")
+	}
+	err = g.AddRelation(embRelNone)
+	if err == nil {
+		t.Error("Expected error when adding relation, but got nil")
+	}
+	err = g.AddRelation(implRelNone)
+	if err == nil {
+		t.Error("Expected error when adding relation, but got nil")
+	}
+	err = g.AddRelation(assocRelNone)
+	if err == nil {
+		t.Error("Expected error when adding relation, but got nil")
+	}
+
 	// Retrieve the added edges
-	edgesA, _ := g.obtainEdgesFromNodeTree(g.FindNodeByKey(objA.ID()))
-	edgesB, _ := g.obtainEdgesFromNodeTree(g.FindNodeByKey(objB.ID()))
+	edgesA := g.obtainEdgesFromNodeTree(g.FindNodeByKey(objA.ID()))
+	edgesB := g.obtainEdgesFromNodeTree(g.FindNodeByKey(objB.ID()))
 
 	// Assert the number of edges for node A
 	expectedEdgesA := 5

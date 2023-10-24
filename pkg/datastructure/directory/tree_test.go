@@ -267,9 +267,8 @@ func TestWalk(t *testing.T) {
 	var traversalResult []string
 
 	// 定义回调函数，记录遍历结果
-	walkFunc := func(dir string, value any) error {
+	walkFunc := func(dir string, value any) {
 		traversalResult = append(traversalResult, dir)
-		return nil
 	}
 
 	// 调用 Walk 函数进行遍历
@@ -308,15 +307,12 @@ func TestWalkRecursive(t *testing.T) {
 	var traversalResult []string
 
 	// 定义回调函数，记录遍历结果
-	walkFunc := func(dir string, value any) error {
+	walkFunc := func(dir string, value any) {
 		traversalResult = append(traversalResult, dir)
-		return nil
 	}
 
 	// 调用 walkRecursive 进行遍历
-	if err := root.walkRecursive("", walkFunc); err != nil {
-		t.Errorf("Expected no error, but got %v", err)
-	}
+	root.walkRecursive("", walkFunc)
 
 	// 验证遍历结果是否符合预期
 	expectedResults := []string{

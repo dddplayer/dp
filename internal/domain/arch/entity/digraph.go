@@ -105,10 +105,7 @@ func (g *RelationDigraph) SummaryRelationMetas(from, to arch.ObjIdentifier) ([]a
 		return nil, fmt.Errorf("from or to node not found in Digraph")
 	}
 
-	fe, err := g.obtainEdgesFromNodeTree(f)
-	if err != nil {
-		return nil, err
-	}
+	fe := g.obtainEdgesFromNodeTree(f)
 
 	feTo := make(map[string]arch.RelationMeta)
 	for _, e := range fe {
@@ -117,10 +114,7 @@ func (g *RelationDigraph) SummaryRelationMetas(from, to arch.ObjIdentifier) ([]a
 			valueobject.NewRelationMeta(e.Type.(arch.RelationType), pos.From(), pos.To())
 	}
 
-	tn, err := g.obtainNodesFromNodeTree(t)
-	if err != nil {
-		return nil, err
-	}
+	tn := g.obtainNodesFromNodeTree(t)
 
 	var toObjIds []string
 	for _, n := range tn {
@@ -137,39 +131,33 @@ func (g *RelationDigraph) SummaryRelationMetas(from, to arch.ObjIdentifier) ([]a
 	return relations, nil
 }
 
-func (g *RelationDigraph) obtainEdgesFromNodeTree(node *directed.Node) ([]*directed.Edge, error) {
+func (g *RelationDigraph) obtainEdgesFromNodeTree(node *directed.Node) []*directed.Edge {
 	var edges []*directed.Edge
 	for _, e := range node.Edges {
 		if t, ok := e.Type.(arch.RelationType); ok {
 			switch t {
 			case arch.RelationTypeEmbedding, arch.RelationTypeComposition:
-				es, err := g.obtainEdgesFromNodeTree(e.To)
-				if err != nil {
-					return nil, err
-				}
+				es := g.obtainEdgesFromNodeTree(e.To)
 				edges = append(edges, es...)
 			}
 		}
 		edges = append(edges, e)
 	}
 
-	return edges, nil
+	return edges
 }
 
-func (g *RelationDigraph) obtainNodesFromNodeTree(node *directed.Node) ([]*directed.Node, error) {
+func (g *RelationDigraph) obtainNodesFromNodeTree(node *directed.Node) []*directed.Node {
 	nodes := []*directed.Node{node}
 	for _, e := range node.Edges {
 		if t, ok := e.Type.(arch.RelationType); ok {
 			switch t {
 			case arch.RelationTypeEmbedding, arch.RelationTypeComposition:
-				ns, err := g.obtainNodesFromNodeTree(e.To)
-				if err != nil {
-					return nil, err
-				}
+				ns := g.obtainNodesFromNodeTree(e.To)
 				nodes = append(nodes, ns...)
 			}
 		}
 	}
 
-	return nodes, nil
+	return nodes
 }

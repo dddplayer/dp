@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"errors"
 	"github.com/dddplayer/dp/internal/domain/arch"
 	"github.com/dddplayer/dp/pkg/datastructure/directory"
 	"reflect"
@@ -23,6 +24,9 @@ func TestNewDirectory(t *testing.T) {
 	if dir.root == nil {
 		t.Errorf("Expected root node to be empty, but it's not")
 	}
+	if len(dir.walkErrs) != 0 {
+		t.Errorf("Expected walkErrs to be empty, but it's not")
+	}
 }
 
 // MockTreeNode 模拟的 TreeNode 结构体
@@ -38,11 +42,11 @@ func TestIsHexagon(t *testing.T) {
 		root: &directory.TreeNode{
 			Name: "root",
 			Children: map[string]*directory.TreeNode{
-				string(arch.HexagonDirectoryCmd): &directory.TreeNode{},
-				string(arch.HexagonDirectoryPkg): &directory.TreeNode{},
-				string(arch.HexagonDirectoryInternal): &directory.TreeNode{
+				string(arch.HexagonDirectoryCmd): {},
+				string(arch.HexagonDirectoryPkg): {},
+				string(arch.HexagonDirectoryInternal): {
 					Children: map[string]*directory.TreeNode{
-						string(arch.HexagonDirectoryDomain): &directory.TreeNode{
+						string(arch.HexagonDirectoryDomain): {
 							Children: map[string]*directory.TreeNode{
 								string(arch.HexagonDirectoryEntity):      nil, // ValueObject missing
 								string(arch.HexagonDirectoryValueObject): nil, // Entity missing
@@ -69,14 +73,14 @@ func TestIsHexagonWithInValidStructure(t *testing.T) {
 		root: &directory.TreeNode{
 			Name: "root",
 			Children: map[string]*directory.TreeNode{
-				string(arch.HexagonDirectoryCmd): &directory.TreeNode{},
-				string(arch.HexagonDirectoryPkg): &directory.TreeNode{},
-				string(arch.HexagonDirectoryInternal): &directory.TreeNode{
+				string(arch.HexagonDirectoryCmd): {},
+				string(arch.HexagonDirectoryPkg): {},
+				string(arch.HexagonDirectoryInternal): {
 					Children: map[string]*directory.TreeNode{
-						string(arch.HexagonDirectoryDomain): &directory.TreeNode{
+						string(arch.HexagonDirectoryDomain): {
 							Children: map[string]*directory.TreeNode{
-								string(arch.HexagonDirectoryEntity):      &directory.TreeNode{}, // Entity present
-								string(arch.HexagonDirectoryValueObject): &directory.TreeNode{}, // ValueObject present
+								string(arch.HexagonDirectoryEntity):      {}, // Entity present
+								string(arch.HexagonDirectoryValueObject): {}, // ValueObject present
 							},
 						},
 					},
@@ -100,11 +104,11 @@ func TestArchDesignPatternWithHexagon(t *testing.T) {
 		root: &directory.TreeNode{
 			Name: "root",
 			Children: map[string]*directory.TreeNode{
-				string(arch.HexagonDirectoryCmd): &directory.TreeNode{},
-				string(arch.HexagonDirectoryPkg): &directory.TreeNode{},
-				string(arch.HexagonDirectoryInternal): &directory.TreeNode{
+				string(arch.HexagonDirectoryCmd): {},
+				string(arch.HexagonDirectoryPkg): {},
+				string(arch.HexagonDirectoryInternal): {
 					Children: map[string]*directory.TreeNode{
-						string(arch.HexagonDirectoryDomain): &directory.TreeNode{
+						string(arch.HexagonDirectoryDomain): {
 							Children: map[string]*directory.TreeNode{
 								string(arch.HexagonDirectoryEntity):      nil, // ValueObject missing
 								string(arch.HexagonDirectoryValueObject): nil, // Entity missing
@@ -131,14 +135,14 @@ func TestArchDesignPatternWithPlain(t *testing.T) {
 		root: &directory.TreeNode{
 			Name: "root",
 			Children: map[string]*directory.TreeNode{
-				string(arch.HexagonDirectoryCmd): &directory.TreeNode{},
-				string(arch.HexagonDirectoryPkg): &directory.TreeNode{},
-				string(arch.HexagonDirectoryInternal): &directory.TreeNode{
+				string(arch.HexagonDirectoryCmd): {},
+				string(arch.HexagonDirectoryPkg): {},
+				string(arch.HexagonDirectoryInternal): {
 					Children: map[string]*directory.TreeNode{
-						string(arch.HexagonDirectoryDomain): &directory.TreeNode{
+						string(arch.HexagonDirectoryDomain): {
 							Children: map[string]*directory.TreeNode{
-								string(arch.HexagonDirectoryEntity):      &directory.TreeNode{}, // Entity present
-								string(arch.HexagonDirectoryValueObject): &directory.TreeNode{}, // ValueObject present
+								string(arch.HexagonDirectoryEntity):      {}, // Entity present
+								string(arch.HexagonDirectoryValueObject): {}, // ValueObject present
 							},
 						},
 					},
@@ -219,7 +223,7 @@ func TestAddObjs(t *testing.T) {
 		root: &directory.TreeNode{
 			Name: "/root",
 			Children: map[string]*directory.TreeNode{
-				"target": &directory.TreeNode{
+				"target": {
 					Name: "target",
 				},
 			},
@@ -260,7 +264,7 @@ func TestGetObjs(t *testing.T) {
 		root: &directory.TreeNode{
 			Name: "/root",
 			Children: map[string]*directory.TreeNode{
-				"target": &directory.TreeNode{
+				"target": {
 					Name: "target",
 				},
 			},
@@ -319,5 +323,35 @@ func TestParentDir(t *testing.T) {
 		if result != testCase.expectedParentDir {
 			t.Errorf("Expected parent directory %s for input directory %s, got %s", testCase.expectedParentDir, testCase.inputDir, result)
 		}
+	}
+}
+
+func TestDirectory_WalkRootDir(t *testing.T) {
+	d, _ := newMockDirectoryWithObjs()
+	cb := func(dir string, val []arch.ObjIdentifier) error {
+		return errors.New("mock error")
+	}
+
+	d.WalkRootDir(cb)
+
+	if len(d.WalkErrs()) != 7 {
+		t.Errorf("Expected 7 error, got %d", len(d.WalkErrs()))
+	}
+}
+
+func TestDirectory_WalkDir(t *testing.T) {
+	d, _ := newMockDirectoryWithObjs()
+	cb := func(dir string, val []arch.ObjIdentifier) error {
+		return errors.New("mock error")
+	}
+
+	d.WalkDir("nonpackage", cb)
+	if len(d.WalkErrs()) != 1 {
+		t.Errorf("Expected 1 error, got %d", len(d.WalkErrs()))
+	}
+
+	d.WalkDir("testpackage/internal/domain", cb)
+	if len(d.WalkErrs()) != 4 {
+		t.Errorf("Expected 4 error, got %d", len(d.WalkErrs()))
 	}
 }

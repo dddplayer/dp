@@ -16,6 +16,10 @@ type Diagram struct {
 }
 
 func NewDiagram(name string, t arch.DiagramType) (*Diagram, error) {
+	if name == "" {
+		return nil, fmt.Errorf("name is empty")
+	}
+
 	g := &Diagram{
 		Graph: directed.NewDirectedGraph(),
 		objs:  []arch.Object{},

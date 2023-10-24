@@ -124,29 +124,17 @@ func BuildDirectoryTree(filePaths []string) *TreeNode {
 	return rootNode
 }
 
-// WalkFunc 是遍历回调函数的类型
-type WalkFunc func(dir string, value any) error
+type WalkFunc func(dir string, value any)
 
-// WalkFrom root
-// WalFrom Node
-
-// Walk 递归遍历目录树
 func Walk(node *TreeNode, cb WalkFunc) {
-	if err := node.walkRecursive("", cb); err != nil {
-		fmt.Println(err.Error())
-	}
+	node.walkRecursive("", cb)
 }
 
-// 辅助函数，实现递归遍历
-func (node *TreeNode) walkRecursive(currentDir string, cb WalkFunc) error {
+func (node *TreeNode) walkRecursive(currentDir string, cb WalkFunc) {
 	dir := path.Join(currentDir, node.Name)
-	if err := cb(dir, node.Value); err != nil {
-		return err
-	}
+	cb(dir, node.Value)
+
 	for _, child := range node.Children {
-		if err := child.walkRecursive(dir, cb); err != nil {
-			return err
-		}
+		child.walkRecursive(dir, cb)
 	}
-	return nil
 }

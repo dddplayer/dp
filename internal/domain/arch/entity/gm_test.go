@@ -12,7 +12,16 @@ func TestNewGeneralModel(t *testing.T) {
 	mockRepo := &MockObjectRepository{}
 	mockDirectory := newMockEmptyDirectory()
 
-	model, err := NewGeneralModel(mockRepo, mockDirectory)
+	model, err := NewGeneralModel(nil, mockDirectory)
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
+	}
+	model, err = NewGeneralModel(mockRepo, nil)
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
+	}
+
+	model, err = NewGeneralModel(mockRepo, mockDirectory)
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
 	}
@@ -806,10 +815,7 @@ func TestGeneralModel_Grouping(t *testing.T) {
 		directory: mockDirectory,
 	}
 
-	err := model.Grouping()
-	if err != nil {
-		t.Errorf("Expected no error, but got: %v", err)
-	}
+	model.Grouping()
 
 	sgs := model.rootGroup.SubGroups()
 

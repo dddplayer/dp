@@ -126,6 +126,29 @@ func TestBuildOriginGraph(t *testing.T) {
 	}
 }
 
+func TestBuildOriginGraph_Error(t *testing.T) {
+	mockRepo := newMockObjRepoWithDuplicatedIdent()
+	mockRelRepo := &MockRelationRepository{
+		relations: make([]arch.Relation, 0),
+	}
+
+	// Create an instance of Arch
+	arc := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			ObjRepo: mockRepo,
+			RelRepo: mockRelRepo,
+		},
+		relationDigraph: nil,
+		directory:       nil,
+	}
+
+	err := arc.buildOriginGraph()
+
+	if err == nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+}
+
 func TestBuildPlain(t *testing.T) {
 	claObj1 := newMockObjectWithId("test/cmd", "cla1", 1)
 	claObj2 := newMockObjectWithId("test/internal/domain/testdomain", "cla2", 1)
@@ -166,6 +189,36 @@ func TestBuildPlain(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
+	}
+}
+
+func TestBuildPlain_Error(t *testing.T) {
+	mockRepo := newMockObjectRepoWithInvalidDir()
+	mockRelRepo := &MockRelationRepository{
+		relations: make([]arch.Relation, 0),
+	}
+
+	arc := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			ObjRepo: mockRepo,
+			RelRepo: mockRelRepo,
+		},
+		relationDigraph: nil,
+		directory:       nil,
+	}
+
+	err := arc.BuildPlain()
+
+	if err == nil {
+		t.Errorf("Expected error, but got: %v", err)
+	}
+
+	arc.CodeHandler.ObjRepo = newMockObjRepoWithDuplicatedIdent()
+
+	err = arc.BuildPlain()
+
+	if err == nil {
+		t.Errorf("Expected error, but got: %v", err)
 	}
 }
 
@@ -407,6 +460,7 @@ func TestStrategicGraph(t *testing.T) {
 	// Check for errors
 	if err != nil {
 		t.Errorf("Expected no error, but got: %v", err)
+		return
 	}
 
 	expectedEdgeCount := 1
@@ -859,6 +913,47 @@ func TestBuildGeneralArchGraph(t *testing.T) {
 	}
 }
 
+func TestBuildGeneralArchGraph_Error(t *testing.T) {
+	mockDirectory, objs := newMockDirectoryWithObjs()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range objs {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	mockArch := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			Scope:   "testpackage",
+			ObjRepo: nil,
+		},
+		relationDigraph: &RelationDigraph{Graph: directed.NewDirectedGraph()},
+		directory:       mockDirectory,
+	}
+
+	_, err := mockArch.buildGeneralArchGraph()
+
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
+	}
+
+	mockArch.CodeHandler.ObjRepo = mockRepo
+	mockArch.CodeHandler.Scope = ""
+
+	_, err = mockArch.buildGeneralArchGraph()
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
+	}
+
+	// Scope not match with directory info
+	mockArch.CodeHandler.Scope = "nonepackage"
+	_, err = mockArch.buildGeneralArchGraph()
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
+	}
+}
+
 func TestComponentRelations(t *testing.T) {
 	domain := "testpackage"
 	mockDiagram, err := NewDiagram(domain, arch.PlainDiagram)
@@ -915,6 +1010,53 @@ func TestComponentRelations(t *testing.T) {
 	}
 }
 
+func TestComponentRelations_Error(t *testing.T) {
+	domain := "testpackage"
+	mockDiagram, err := NewDiagram(domain, arch.PlainDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	mockObject1 := newMockObject(1)
+	mockObject2 := newMockObject(2)
+	mockDiagram.objs = []arch.Object{mockObject1, mockObject2}
+
+	// Create a new RelationDigraph instance
+	g := &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+
+	mockArch := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			Scope: domain,
+		},
+		relationDigraph: g,
+		directory:       nil,
+	}
+
+	// 调用被测试的函数
+	err = mockArch.componentRelations(mockDiagram)
+
+	// 检查是否返回了错误
+	if err == nil {
+		t.Errorf("Expected error, but got: %v", err)
+	}
+
+	// Add the mock ObjIdentifier objects to the graph
+	_ = g.AddObj(mockObject1.Identifier())
+	_ = g.AddObj(mockObject2.Identifier())
+
+	// Create edges for testing
+	_ = g.AddEdge(mockObject1.Identifier().ID(), mockObject2.Identifier().ID(), arch.RelationTypeComposition, valueobject.NewEmptyRelationPos())
+
+	// 调用被测试的函数
+	err = mockArch.componentRelations(mockDiagram)
+
+	// 检查是否返回了错误
+	if err == nil {
+		t.Errorf("Expected error, but got: %v", err)
+	}
+}
+
 func TestComponentAssociationRelations(t *testing.T) {
 	domain := "testpackage"
 	mockDiagram, err := NewDiagram(domain, arch.PlainDiagram)
@@ -968,6 +1110,53 @@ func TestComponentAssociationRelations(t *testing.T) {
 	expectedEdgeCount := 5
 	if len(mockDiagram.Edges()) != expectedEdgeCount {
 		t.Errorf("Expected edges to be %d, but got %d", expectedEdgeCount, len(mockDiagram.Edges()))
+	}
+}
+
+func TestComponentAssociationRelations_Error(t *testing.T) {
+	domain := "testpackage"
+	mockDiagram, err := NewDiagram(domain, arch.PlainDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	mockObject1 := newMockObject(1)
+	mockObject2 := newMockObject(2)
+
+	mockDiagram.objs = []arch.Object{mockObject1, mockObject2}
+
+	// Create a new RelationDigraph instance
+	g := &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+
+	mockArch := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			Scope: domain,
+		},
+		relationDigraph: g,
+		directory:       nil,
+	}
+
+	// 调用被测试的函数
+	err = mockArch.componentAssociationRelations(mockDiagram)
+
+	// 检查是否返回了错误
+	if err == nil {
+		t.Errorf("Expected error, got: %v", err)
+	}
+
+	// Add the mock ObjIdentifier objects to the graph
+	_ = g.AddObj(mockObject1.Identifier())
+	_ = g.AddObj(mockObject2.Identifier())
+	// Create edges for testing
+	_ = g.AddEdge(mockObject1.Identifier().ID(), mockObject2.Identifier().ID(), arch.RelationTypeAssociationOneOne, valueobject.NewEmptyRelationPos())
+
+	// 调用被测试的函数
+	err = mockArch.componentAssociationRelations(mockDiagram)
+
+	// 检查是否返回了错误
+	if err == nil {
+		t.Errorf("Expected error, got: %v", err)
 	}
 }
 

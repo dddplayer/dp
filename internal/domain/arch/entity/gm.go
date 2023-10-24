@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dddplayer/dp/internal/domain/arch"
 	"github.com/dddplayer/dp/internal/domain/arch/repository"
@@ -15,6 +16,13 @@ type GeneralModel struct {
 }
 
 func NewGeneralModel(r repository.ObjectRepository, d *Directory) (*GeneralModel, error) {
+	if r == nil {
+		return nil, errors.New("repo is nil")
+	}
+	if d == nil {
+		return nil, errors.New("directory is nil")
+	}
+
 	return &GeneralModel{
 		repo:      r,
 		directory: d,
@@ -54,7 +62,7 @@ func (gm *GeneralModel) GroupingWithFilter(filter groupingFilter) error {
 	return nil
 }
 
-func (gm *GeneralModel) Grouping() error {
+func (gm *GeneralModel) Grouping() {
 	rootDir := gm.directory.RootDir()
 
 	gm.directory.WalkRootDir(func(dir string, objIds []arch.ObjIdentifier) error {
@@ -69,11 +77,8 @@ func (gm *GeneralModel) Grouping() error {
 			pg := gm.FindGroup(path.Dir(dir), gm.rootGroup)
 			pg.AppendGroups(valueobject.NewGroup(dir, objs...))
 		}
-
 		return nil
 	})
-
-	return nil
 }
 
 func (gm *GeneralModel) FindGroup(name string, g valueobject.Group) valueobject.Group {

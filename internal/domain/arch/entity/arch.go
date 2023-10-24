@@ -356,9 +356,8 @@ func (arc *Arch) buildGeneralArchGraph() (*Diagram, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := gm.Grouping(); err != nil {
-		return nil, err
-	}
+
+	gm.Grouping()
 
 	g, err := NewDiagram(arc.Scope, arch.TableDiagram)
 	if err != nil {
