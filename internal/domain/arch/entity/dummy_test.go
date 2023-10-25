@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dddplayer/dp/internal/domain/arch"
 	"github.com/dddplayer/dp/internal/domain/arch/valueobject"
+	"github.com/dddplayer/dp/pkg/datastructure/directed"
 	"github.com/dddplayer/dp/pkg/datastructure/directory"
 	"path"
 )
@@ -993,3 +994,55 @@ type MockRelationPos struct {
 
 func (r *MockRelationPos) From() arch.Position { return r.fromPos }
 func (r *MockRelationPos) To() arch.Position   { return r.toPos }
+
+func NewRelationDigraph() *RelationDigraph {
+	g := &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+
+	// Create mock ObjIdentifier objects for testing
+	mockIdentifier1 := &MockObjIdentifier{
+		id:   "/path/to/main",
+		name: "main",
+		dir:  "/path/to/main",
+	}
+	mockPosition1 := &MockPosition{FilenameVal: "file1", OffsetVal: 10, LineVal: 5, ColumnVal: 2}
+	objA := MockObject{id: mockIdentifier1, position: mockPosition1}
+
+	mockIdentifier2 := &MockObjIdentifier{
+		id:   "/path/to/sub/objectB",
+		name: "ObjectB",
+		dir:  "/path/to/sub/objectB",
+	}
+	mockPosition2 := &MockPosition{FilenameVal: "file2", OffsetVal: 10, LineVal: 5, ColumnVal: 2}
+	objB := MockObject{id: mockIdentifier2, position: mockPosition2}
+
+	mockIdentifier3 := &MockObjIdentifier{
+		id:   "/path/to/sub/objectC",
+		name: "ObjectC",
+		dir:  "/path/to/sub/objectC",
+	}
+	mockPosition3 := &MockPosition{FilenameVal: "file3", OffsetVal: 10, LineVal: 5, ColumnVal: 2}
+	objC := MockObject{id: mockIdentifier3, position: mockPosition3}
+
+	// Add the mock ObjIdentifier objects to the graph
+	_ = g.AddObj(objA)
+	_ = g.AddObj(objB)
+	_ = g.AddObj(objC)
+
+	// Create mock Relation objects for testing
+	depRel1 := &MockDependenceRelation{
+		from:      objA,
+		dependsOn: objB,
+	}
+	depRel2 := &MockDependenceRelation{
+		from:      objA,
+		dependsOn: objC,
+	}
+
+	// Call the method being tested
+	_ = g.AddRelation(depRel1)
+	_ = g.AddRelation(depRel2)
+
+	return g
+}

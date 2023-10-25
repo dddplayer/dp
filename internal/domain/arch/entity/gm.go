@@ -35,7 +35,7 @@ type groupingFilter interface {
 	FilterObjs(objs []arch.Object) []arch.Object
 }
 
-func (gm *GeneralModel) GroupingWithFilter(filter groupingFilter) error {
+func (gm *GeneralModel) GroupingWithFilter(filter groupingFilter) {
 	rootDir := gm.directory.RootDir()
 
 	gm.directory.WalkRootDir(func(dir string, objIds []arch.ObjIdentifier) error {
@@ -58,8 +58,6 @@ func (gm *GeneralModel) GroupingWithFilter(filter groupingFilter) error {
 
 		return nil
 	})
-
-	return nil
 }
 
 func (gm *GeneralModel) Grouping() {

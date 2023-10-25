@@ -360,6 +360,101 @@ func TestSummaryDomainComponentRelations(t *testing.T) {
 	}
 }
 
+func TestSummaryDomainComponentRelations_Error(t *testing.T) {
+	name := "TestDiagram"
+	mockDiagram, err := NewDiagram(name, arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	// Create some mock objects
+	domain := "TestDomain"
+	funcObj0 := newMockObjectFunction(0)
+	funcObj1 := newMockDomainFunction(domain, newMockObjectFunction(1))
+
+	// Add the mock objects to the Diagram
+	_ = mockDiagram.AddObj(funcObj0)
+	_ = mockDiagram.AddObj(funcObj1)
+	mockDiagram.objs = append(mockDiagram.objs, funcObj0, funcObj1)
+
+	// Create a new RelationDigraph instance
+	g := &RelationDigraph{
+		Graph: directed.NewDirectedGraph(),
+	}
+
+	mockArch := &Arch{
+		CodeHandler:     &valueobject.CodeHandler{},
+		relationDigraph: g,
+		directory:       nil,
+	}
+
+	err = mockArch.summaryDomainComponentRelations(mockDiagram)
+	if err == nil {
+		t.Errorf("Expected error, but got: %v", err)
+	}
+
+	mockDiagram, err = NewDiagram(name, arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	// Create some mock objects
+	funcObj2 := newMockDomainFunction(domain, newMockObjectFunction(2))
+	funcObj3 := newMockObjectFunction(3)
+
+	// Add the mock objects to the Diagram
+	_ = mockDiagram.AddObj(funcObj2)
+	_ = mockDiagram.AddObj(funcObj3)
+	mockDiagram.objs = append(mockDiagram.objs, funcObj2, funcObj3)
+	err = mockArch.summaryDomainComponentRelations(mockDiagram)
+	if err == nil {
+		t.Errorf("Expected error, but got: %v", err)
+	}
+
+	mockDiagram, err = NewDiagram(name, arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	// Create some mock objects
+	funcObj5 := newMockDomainFunction(domain, newMockObjectFunction(5))
+	funcObj6 := newMockDomainFunction(domain, newMockObjectFunction(6))
+
+	// Add the mock objects to the Diagram
+	_ = mockDiagram.AddObj(funcObj5)
+	_ = mockDiagram.AddObj(funcObj6)
+	mockDiagram.objs = append(mockDiagram.objs, funcObj5, funcObj6)
+	err = mockArch.summaryDomainComponentRelations(mockDiagram)
+	if err == nil {
+		t.Errorf("Expected error, but got: %v", err)
+	}
+
+	mockDiagram, err = NewDiagram(name, arch.TableDiagram)
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+	// Create some mock objects
+	funcObj7 := newMockDomainFunction(domain, newMockObjectFunction(7))
+	funcObj8 := newMockDomainFunction(domain, newMockObjectFunction(8))
+
+	// Add the mock objects to the Diagram
+	mockDiagram.objs = append(mockDiagram.objs, funcObj7, funcObj8)
+
+	// Add the mock ObjIdentifier objects to the graph
+	err = g.AddObj(funcObj7.OriginIdentifier())
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	err = g.AddObj(funcObj8.OriginIdentifier())
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	// Create edges for testing
+	_ = g.AddEdge(funcObj7.OriginIdentifier().ID(), funcObj8.OriginIdentifier().ID(), arch.RelationTypeComposition, valueobject.NewEmptyRelationPos())
+	err = mockArch.summaryDomainComponentRelations(mockDiagram)
+	if err == nil {
+		t.Errorf("Expected error, but got: %v", err)
+	}
+}
+
 func TestBuildStrategicArchGraph(t *testing.T) {
 	mockDirectory, objs := newMockDirectoryWithDomainObjs()
 	mockRepo := &MockObjectRepository{
@@ -874,6 +969,59 @@ func TestGeneralGraph(t *testing.T) {
 	expectedEdgeCount = 6
 	if len(diagram.Edges()) != expectedEdgeCount {
 		t.Errorf("Expected edges to be %d, but got %d", expectedEdgeCount, len(diagram.Edges()))
+	}
+}
+
+func TestGeneralGraph_Error(t *testing.T) {
+	mockRepo := newMockObjectRepoWithInvalidDir()
+	mockRelRepo := &MockRelationRepository{
+		relations: make([]arch.Relation, 0),
+	}
+
+	mockArch := &Arch{
+		CodeHandler: &valueobject.CodeHandler{
+			Scope:   "test",
+			ObjRepo: mockRepo,
+			RelRepo: mockRelRepo,
+		},
+		relationDigraph: nil,
+		directory:       nil,
+	}
+
+	// Call the StrategicGraph function
+	_, err := mockArch.GeneralGraph(&MockOptions{
+		ShowAllRel:            false,
+		ShowStructEmbeddedRel: false,
+	})
+
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
+	}
+
+	claObj1 := newMockObjectWithId("test/cmd", "cla1", 1)
+	claObj2 := newMockObjectWithId("test/internal/domain/testdomain", "cla2", 1)
+	claObj20 := newMockClassWithName("test/internal/domain/testdomain/entity", "testdomain")
+	claObj3 := newMockObjectWithId("test/pkg", "cla3", 1)
+	mockRepo = &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	_ = mockRepo.Insert(claObj1)
+	_ = mockRepo.Insert(claObj2)
+	_ = mockRepo.Insert(claObj20)
+	_ = mockRepo.Insert(claObj3)
+
+	mockArch.CodeHandler.ObjRepo = mockRepo
+	mockArch.CodeHandler.Scope = ""
+
+	// Call the StrategicGraph function
+	_, err = mockArch.GeneralGraph(&MockOptions{
+		ShowAllRel:            false,
+		ShowStructEmbeddedRel: false,
+	})
+
+	if err == nil {
+		t.Errorf("Expected error, but got nil")
 	}
 }
 

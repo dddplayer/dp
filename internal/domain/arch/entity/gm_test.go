@@ -825,3 +825,65 @@ func TestGeneralModel_Grouping(t *testing.T) {
 		t.Errorf("Expected %d subgroups in the group, but got %d", expectedSubGroupCount, len(sgs))
 	}
 }
+
+type MockFilter struct{}
+
+func (f *MockFilter) IsValid(dir string) bool {
+	return true
+}
+
+func (f *MockFilter) FilterObjs(objs []arch.Object) []arch.Object {
+	return objs
+}
+
+type MockInvalidFilter struct{}
+
+func (f *MockInvalidFilter) IsValid(dir string) bool {
+	return false
+}
+
+func (f *MockInvalidFilter) FilterObjs(objs []arch.Object) []arch.Object {
+	return objs
+}
+
+func TestGeneralModel_GroupingWithFilter(t *testing.T) {
+	mockDirectory, objs := newMockDirectoryWithObjs()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range objs {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	model := &GeneralModel{
+		repo:      mockRepo,
+		directory: mockDirectory,
+	}
+
+	// 创建一个模拟的过滤器
+	mockFilter := &MockFilter{}
+
+	model.GroupingWithFilter(mockFilter)
+
+	sgs := model.rootGroup.SubGroups()
+
+	// Verify the number of objects in the diagram
+	expectedSubGroupCount := 3
+	if len(sgs) != expectedSubGroupCount {
+		t.Errorf("Expected %d subgroups in the group, but got %d", expectedSubGroupCount, len(sgs))
+	}
+
+	// 测试一个无效的过滤器，它会跳过所有目录
+	invalidFilter := &MockInvalidFilter{}
+
+	// 重置模型的根组以便重新测试
+	model.rootGroup = nil
+
+	model.GroupingWithFilter(invalidFilter)
+
+	// 验证根组是否仍然为空，因为过滤器会跳过所有目录
+	if model.rootGroup != nil {
+		t.Errorf("Expected an empty root group, but it's not empty")
+	}
+}

@@ -20,6 +20,88 @@ type MessageFlow struct {
 	modulePath      string
 }
 
+func (mf *MessageFlow) newDirFilter() (*DirFilter, error) {
+	if n := mf.relationDigraph.FindNodeByKey(mf.mainFuncPath()); n != nil {
+		ps := mf.relationDigraph.FindPathsToPrefix(mf.mainFuncPath(), mf.endPkgPath)
+
+		validPkgs := make(map[string]bool)
+		objs := make([]arch.ObjIdentifier, 0, len(ps))
+		for _, p := range ps {
+			for _, n := range p {
+				dir := path.Dir(n.Key)
+				if ok := validPkgs[dir]; !ok {
+					validPkgs[dir] = true
+				}
+
+				objs = append(objs, n.Value.(arch.ObjIdentifier))
+			}
+		}
+
+		keys := make([]string, 0, len(validPkgs))
+		for key := range validPkgs {
+			keys = append(keys, key)
+		}
+		return &DirFilter{pkgSet: keys, paths: ps, objs: objs}, nil
+	}
+
+	return nil, errors.New("main func not found")
+}
+
+func (mf *MessageFlow) buildDiagram() (*Diagram, error) {
+	dirFilter, err := mf.newDirFilter()
+	if err != nil {
+		return nil, err
+	}
+
+	gm, err := NewGeneralModel(mf.objRepo, mf.directory)
+	if err != nil {
+		return nil, err
+	}
+	gm.GroupingWithFilter(dirFilter)
+
+	g, err := NewDiagram(mf.modulePath, arch.TableDiagram)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := gm.addRootGroupToDiagram(g); err != nil {
+		return nil, err
+	}
+
+	var preIdentifier arch.ObjIdentifier
+
+	for _, p := range dirFilter.paths {
+		for _, n := range p {
+			if preIdentifier == nil {
+				preIdentifier = n.Value.(arch.ObjIdentifier)
+				continue
+			}
+			current := n.Value.(arch.ObjIdentifier)
+			metas, err := mf.relationDigraph.RelationMetas(
+				preIdentifier,
+				current,
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			fromId := preIdentifier.ID()
+			toId := current.ID()
+			if err := g.AddRelations(fromId, toId, metas); err != nil {
+				return nil, err
+			}
+			preIdentifier = current
+		}
+	}
+
+	return g, nil
+}
+
+func (mf *MessageFlow) mainFuncPath() string {
+	mfp := fmt.Sprintf("%s/%s", mf.mainPkgPath, "main")
+	return mfp
+}
+
 type DirFilter struct {
 	pkgSet []string
 	paths  [][]*directed.Node
@@ -79,88 +161,4 @@ func getReceiverFromSourceData(receiver arch.ObjIdentifier, sourceData []arch.Ob
 		}
 	}
 	return nil
-}
-
-func (mf *MessageFlow) newDirFilter() (*DirFilter, error) {
-	if n := mf.relationDigraph.FindNodeByKey(mf.mainFuncPath()); n != nil {
-		ps := mf.relationDigraph.FindPathsToPrefix(mf.mainFuncPath(), mf.endPkgPath)
-
-		validPkgs := make(map[string]bool)
-		objs := make([]arch.ObjIdentifier, 0, len(ps))
-		for _, p := range ps {
-			for _, n := range p {
-				dir := path.Dir(n.Key)
-				if ok := validPkgs[dir]; !ok {
-					validPkgs[dir] = true
-				}
-
-				objs = append(objs, n.Value.(arch.ObjIdentifier))
-			}
-		}
-
-		keys := make([]string, 0, len(validPkgs))
-		for key := range validPkgs {
-			keys = append(keys, key)
-		}
-		return &DirFilter{pkgSet: keys, paths: ps, objs: objs}, nil
-	}
-
-	return nil, errors.New("main func not found")
-}
-
-func (mf *MessageFlow) buildDiagram() (*Diagram, error) {
-	dirFilter, err := mf.newDirFilter()
-	if err != nil {
-		return nil, err
-	}
-
-	gm, err := NewGeneralModel(mf.objRepo, mf.directory)
-	if err != nil {
-		return nil, err
-	}
-	if err := gm.GroupingWithFilter(dirFilter); err != nil {
-		return nil, err
-	}
-
-	g, err := NewDiagram(mf.modulePath, arch.TableDiagram)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := gm.addRootGroupToDiagram(g); err != nil {
-		return nil, err
-	}
-
-	var preIdentifier arch.ObjIdentifier
-
-	for _, p := range dirFilter.paths {
-		for _, n := range p {
-			if preIdentifier == nil {
-				preIdentifier = n.Value.(arch.ObjIdentifier)
-				continue
-			}
-			current := n.Value.(arch.ObjIdentifier)
-			metas, err := mf.relationDigraph.RelationMetas(
-				preIdentifier,
-				current,
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			fromId := preIdentifier.ID()
-			toId := current.ID()
-			if err := g.AddRelations(fromId, toId, metas); err != nil {
-				return nil, err
-			}
-			preIdentifier = current
-		}
-	}
-
-	return g, nil
-}
-
-func (mf *MessageFlow) mainFuncPath() string {
-	mfp := fmt.Sprintf("%s/%s", mf.mainPkgPath, "main")
-	return mfp
 }
