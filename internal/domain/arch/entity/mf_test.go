@@ -212,3 +212,39 @@ func equalStringSlices(slice1, slice2 []string) bool {
 	}
 	return true
 }
+
+func TestBuildDiagram(t *testing.T) {
+	mockDirectory, objs := newMockMfDirectoryWithObjs()
+	mockRepo := &MockObjectRepository{
+		objects: make(map[string]arch.Object),
+		idents:  []arch.ObjIdentifier{},
+	}
+	for _, mockObj := range objs {
+		_ = mockRepo.Insert(mockObj)
+	}
+
+	mf := &MessageFlow{
+		directory:       mockDirectory,
+		objRepo:         mockRepo,
+		relationDigraph: NewRelationDigraph(),
+		mainPkgPath:     "/path/to",
+		endPkgPath:      "/path/to/sub",
+		modulePath:      "/path/to",
+	}
+
+	diagram, err := mf.buildDiagram()
+
+	if err != nil {
+		t.Errorf("Expected no error, but got: %v", err)
+	}
+
+	expectedNodeCount := 7
+	if len(diagram.Nodes) != expectedNodeCount {
+		t.Errorf("Expected %d nodes, but got %d", expectedNodeCount, len(diagram.Nodes))
+	}
+
+	expectedEdgeCount := 5
+	if len(diagram.Edges()) != expectedEdgeCount {
+		t.Errorf("Expected edges to be %d, but got %d", expectedEdgeCount, len(diagram.Edges()))
+	}
+}

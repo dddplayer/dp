@@ -1010,17 +1010,17 @@ func NewRelationDigraph() *RelationDigraph {
 	objA := MockObject{id: mockIdentifier1, position: mockPosition1}
 
 	mockIdentifier2 := &MockObjIdentifier{
-		id:   "/path/to/sub/objectB",
+		id:   "/path/to/sub/ObjectB",
 		name: "ObjectB",
-		dir:  "/path/to/sub/objectB",
+		dir:  "/path/to/sub/ObjectB",
 	}
 	mockPosition2 := &MockPosition{FilenameVal: "file2", OffsetVal: 10, LineVal: 5, ColumnVal: 2}
 	objB := MockObject{id: mockIdentifier2, position: mockPosition2}
 
 	mockIdentifier3 := &MockObjIdentifier{
-		id:   "/path/to/sub/objectC",
+		id:   "/path/to/sub/ObjectC",
 		name: "ObjectC",
-		dir:  "/path/to/sub/objectC",
+		dir:  "/path/to/sub/ObjectC",
 	}
 	mockPosition3 := &MockPosition{FilenameVal: "file3", OffsetVal: 10, LineVal: 5, ColumnVal: 2}
 	objC := MockObject{id: mockIdentifier3, position: mockPosition3}
@@ -1045,4 +1045,47 @@ func NewRelationDigraph() *RelationDigraph {
 	_ = g.AddRelation(depRel2)
 
 	return g
+}
+
+func newMockMfDirectoryWithObjs() (*Directory, []arch.Object) {
+	mockIdentifier1 := &MockObjIdentifier{
+		id:   "/path/to/main",
+		name: "main",
+		dir:  "/path/to",
+	}
+	mockPosition1 := &MockPosition{FilenameVal: "file1", OffsetVal: 10, LineVal: 5, ColumnVal: 2}
+	objA := MockObject{id: mockIdentifier1, position: mockPosition1}
+	funcA := valueobject.NewFunction(objA, nil)
+
+	mockIdentifier2 := &MockObjIdentifier{
+		id:   "/path/to/sub/ObjectB",
+		name: "ObjectB",
+		dir:  "/path/to/sub",
+	}
+	mockPosition2 := &MockPosition{FilenameVal: "file2", OffsetVal: 10, LineVal: 5, ColumnVal: 2}
+	objB := MockObject{id: mockIdentifier2, position: mockPosition2}
+	funcB := valueobject.NewFunction(objB, nil)
+
+	mockIdentifier3 := &MockObjIdentifier{
+		id:   "/path/to/sub/ObjectC",
+		name: "ObjectC",
+		dir:  "/path/to/sub",
+	}
+	mockPosition3 := &MockPosition{FilenameVal: "file3", OffsetVal: 10, LineVal: 5, ColumnVal: 2}
+	objC := MockObject{id: mockIdentifier3, position: mockPosition3}
+	funcC := valueobject.NewFunction(objC, nil)
+
+	mockDirectory := &Directory{
+		root: &directory.TreeNode{
+			Name:  "/path/to",
+			Value: []arch.ObjIdentifier{funcA.Identifier()},
+			Children: map[string]*directory.TreeNode{
+				"sub": {
+					Name:  "sub",
+					Value: []arch.ObjIdentifier{funcB.Identifier(), funcC.Identifier()},
+				},
+			},
+		},
+	}
+	return mockDirectory, []arch.Object{funcA, funcB, funcC}
 }
