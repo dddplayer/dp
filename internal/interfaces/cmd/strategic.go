@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/dddplayer/dp/internal/application"
 	"github.com/dddplayer/dp/internal/infrastructure/persistence"
+	"path"
+	"strings"
 )
 
 type strategicCmd struct {
@@ -62,5 +64,9 @@ func strategicGraph(mainPkg, domain string) error {
 	}
 
 	open(dot)
+	if err = writeToDisk(dot, strings.ReplaceAll(path.Join(domain, "detail"), "/", "."), mainPkg); err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -81,7 +81,10 @@ func normalCompositionGraph(mainPkg, domain string) error {
 	}
 
 	open(dot)
-	writeToDisk(dot, strings.ReplaceAll(domain, "/", "."))
+
+	if err = writeToDisk(dot, filename(domain, "composition"), mainPkg); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -96,7 +99,10 @@ func normalDetailGraph(mainPkg, domain string) error {
 	}
 
 	open(dot)
-	writeToDisk(dot, strings.ReplaceAll(domain, "/", "."))
+
+	if err = writeToDisk(dot, filename(domain, "detail"), mainPkg); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -111,7 +117,10 @@ func normalMessageFlowGraph(mainPkg, domain string) error {
 	}
 
 	open(dot)
-	writeToDisk(dot, strings.ReplaceAll(domain, "/", "."))
+
+	if err = writeToDisk(dot, filename(domain, "messageflow"), mainPkg); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -126,7 +135,18 @@ func normalGraph(mainPkg, domain string) error {
 	}
 
 	open(dot)
-	writeToDisk(dot, strings.ReplaceAll(domain, "/", "."))
+
+	if err = writeToDisk(dot, filename(domain, ""), mainPkg); err != nil {
+		return err
+	}
 
 	return nil
+}
+
+func filename(main, sub string) string {
+	mainStr := strings.ReplaceAll(main, "/", ".")
+	if sub == "" {
+		return mainStr
+	}
+	return fmt.Sprintf("%s.%s", mainStr, sub)
 }

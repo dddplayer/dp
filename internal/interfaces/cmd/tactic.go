@@ -70,7 +70,9 @@ func tacticGraph(mainPkg, domain string) error {
 	}
 
 	open(dot)
-	writeToDisk(dot, strings.ReplaceAll(domain, "/", "."))
+	if err = writeToDisk(dot, strings.ReplaceAll(domain, "/", "."), mainPkg); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -84,6 +86,8 @@ func detailTacticGraph(mainPkg, domain string) error {
 	}
 
 	open(dot)
-	writeToDisk(dot, strings.ReplaceAll(path.Join(domain, "detail"), "/", "."))
+	if err = writeToDisk(dot, strings.ReplaceAll(path.Join(domain, "detail"), "/", "."), mainPkg); err != nil {
+		return err
+	}
 	return nil
 }
