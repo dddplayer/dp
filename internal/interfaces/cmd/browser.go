@@ -9,13 +9,13 @@ import (
 
 const officialWebsiteUrl = "https://dddplayer.com"
 
-func open(raw string) {
+func open(raw string) error {
 	encoded := encodeURIComponent(raw)
 	err := openBrowser(fmt.Sprintf("%s/#%s", officialWebsiteUrl, encoded))
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
+	return nil
 }
 
 func encodeURIComponent(str string) string {

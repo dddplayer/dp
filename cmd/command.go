@@ -14,8 +14,10 @@ func New() error {
 		fmt.Println("Usage:\n  dp [command]")
 		fmt.Println("\nCommands:")
 		fmt.Println("  strategic:  generate domain strategic diagram")
-		fmt.Println("  tactic:     generate domain tactic diagram")
-		fmt.Println("  normal:     generate normal arch diagram")
+		fmt.Println("     tactic:  generate domain tactic diagram")
+		fmt.Println("     normal:  generate normal arch diagram")
+		fmt.Println("       open:  open arch diagram")
+		fmt.Println("    version:  show dddplayer command version")
 
 		fmt.Println("\nExample:")
 		fmt.Println("  dp normal -m ~/github/dddplayer/dp -p github.com/dddplayer/dp/internal/domain")
@@ -36,6 +38,23 @@ func New() error {
 		subCommand := topLevel.Args()[0]
 
 		switch subCommand {
+		case "version":
+			versionCmd, err := cmd.NewVersionCmd(topLevel)
+			if err != nil {
+				return err
+			}
+			if err := versionCmd.Run(); err != nil {
+				return err
+			}
+		case "open":
+			openCmd, err := cmd.NewOpenCmd(topLevel)
+			if err != nil {
+				return err
+			}
+			if err := openCmd.Run(); err != nil {
+				return err
+			}
+
 		case "normal":
 			normalCmd, err := cmd.NewNormalCmd(topLevel)
 			if err != nil {

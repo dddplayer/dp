@@ -80,7 +80,9 @@ func normalCompositionGraph(mainPkg, domain string) error {
 		return err
 	}
 
-	open(dot)
+	if err = open(dot); err != nil {
+		return err
+	}
 
 	if err = writeToDisk(dot, filename(domain, "composition"), mainPkg); err != nil {
 		return err
@@ -98,7 +100,9 @@ func normalDetailGraph(mainPkg, domain string) error {
 		return err
 	}
 
-	open(dot)
+	if err = open(dot); err != nil {
+		return err
+	}
 
 	if err = writeToDisk(dot, filename(domain, "detail"), mainPkg); err != nil {
 		return err
@@ -116,7 +120,9 @@ func normalMessageFlowGraph(mainPkg, domain string) error {
 		return err
 	}
 
-	open(dot)
+	if err = open(dot); err != nil {
+		return err
+	}
 
 	if err = writeToDisk(dot, filename(domain, "messageflow"), mainPkg); err != nil {
 		return err
@@ -134,7 +140,9 @@ func normalGraph(mainPkg, domain string) error {
 		return err
 	}
 
-	open(dot)
+	if err = open(dot); err != nil {
+		return err
+	}
 
 	if err = writeToDisk(dot, filename(domain, ""), mainPkg); err != nil {
 		return err

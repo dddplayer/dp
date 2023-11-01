@@ -63,7 +63,9 @@ func strategicGraph(mainPkg, domain string) error {
 		return err
 	}
 
-	open(dot)
+	if err = open(dot); err != nil {
+		return err
+	}
 	if err = writeToDisk(dot, strings.ReplaceAll(path.Join(domain, "detail"), "/", "."), mainPkg); err != nil {
 		return err
 	}
