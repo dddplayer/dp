@@ -183,7 +183,8 @@ func TestMessageFlow_NewDirFilter(t *testing.T) {
 
 	// 验证生成的 DirFilter 是否符合预期
 	expectedPkgSet := []string{"/path/to", "/path/to/sub"}
-	if !equalStringSlices(dirFilter.pkgSet, expectedPkgSet) {
+	expectedPkgSet1 := []string{"/path/to/sub", "/path/to"}
+	if !(equalStringSlices(dirFilter.pkgSet, expectedPkgSet) || equalStringSlices(dirFilter.pkgSet, expectedPkgSet1)) {
 		t.Errorf("Expected pkgSet %v, but got %v", expectedPkgSet, dirFilter.pkgSet)
 	}
 
