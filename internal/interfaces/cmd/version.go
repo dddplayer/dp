@@ -36,7 +36,6 @@ func (oc *versionCmd) Run() error {
 }
 
 func BuildVersionString() string {
-	// program := "Hugo Static Site Generator"
 	program := "dddplayer"
 
 	version := "v" + CurrentVersion.String()
@@ -117,7 +116,7 @@ var CurrentVersion = Version{
 	Suffix:     "",
 }
 
-// Version represents the Hugo build version.
+// Version represents the DDD Player build version.
 type Version struct {
 	Major int
 
@@ -126,7 +125,6 @@ type Version struct {
 	// Increment this for bug releases
 	PatchLevel int
 
-	// HugoVersionSuffix is the suffix used in the Hugo version string.
 	// It will be blank for release versions.
 	Suffix string
 }

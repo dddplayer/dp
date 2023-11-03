@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"github.com/dddplayer/dp/internal/application"
 	"github.com/dddplayer/dp/internal/infrastructure/persistence"
-	"path"
-	"strings"
 )
 
 type tacticCmd struct {
@@ -72,7 +70,7 @@ func tacticGraph(mainPkg, domain string) error {
 	if err = open(dot); err != nil {
 		return err
 	}
-	if err = writeToDisk(dot, strings.ReplaceAll(domain, "/", "."), mainPkg); err != nil {
+	if err = writeToDisk(dot, filename(domain, "tactic"), mainPkg); err != nil {
 		return err
 	}
 	return nil
@@ -90,7 +88,7 @@ func detailTacticGraph(mainPkg, domain string) error {
 	if err = open(dot); err != nil {
 		return err
 	}
-	if err = writeToDisk(dot, strings.ReplaceAll(path.Join(domain, "detail"), "/", "."), mainPkg); err != nil {
+	if err = writeToDisk(dot, filename(domain, "tactic.detail"), mainPkg); err != nil {
 		return err
 	}
 	return nil

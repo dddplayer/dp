@@ -40,6 +40,7 @@ func TestStrategicGraph(t *testing.T) {
 
 	result, err := StrategicGraph(tempDir,
 		path.Join(reflect.TypeOf(MockObjectRepository{}).PkgPath(), path.Base(tempDir)),
+		false,
 		mockRepo, mockRelRepo)
 
 	if err != nil {
@@ -54,7 +55,7 @@ func TestStrategicGraph(t *testing.T) {
 }
 
 func TestStrategicGraph_ArchFactoryError(t *testing.T) {
-	_, err := StrategicGraph("", "", nil, nil)
+	_, err := StrategicGraph("", "", false, nil, nil)
 
 	if err == nil || err.Error() != "objRepo cannot be nil" {
 		t.Errorf("Expected error 'objRepo cannot be nil', but got: %v", err)
@@ -69,7 +70,7 @@ func TestStrategicGraph_EntityNewCodeError(t *testing.T) {
 	// 模拟 entity.NewCode 函数返回错误
 	expectedError := errors.New("packages contain errors")
 
-	_, err := StrategicGraph("non-exist", "dummy", mockObjRepo, mockRelRepo)
+	_, err := StrategicGraph("non-exist", "dummy", false, mockObjRepo, mockRelRepo)
 
 	// 验证返回的错误是否符合预期
 	if err.Error() != expectedError.Error() {

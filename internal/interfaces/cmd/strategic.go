@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"github.com/dddplayer/dp/internal/application"
 	"github.com/dddplayer/dp/internal/infrastructure/persistence"
-	"path"
-	"strings"
 )
 
 type strategicCmd struct {
-	parent   *flag.FlagSet
-	cmd      *flag.FlagSet
-	mainFlag *string
-	pkgFlag  *string
+	parent       *flag.FlagSet
+	cmd          *flag.FlagSet
+	mainFlag     *string
+	pkgFlag      *string
+	fastModeFlag *bool
+	deepModeFlag *bool
 }
 
 func NewStrategicCmd(parent *flag.FlagSet) (*strategicCmd, error) {
@@ -27,6 +27,8 @@ func NewStrategicCmd(parent *flag.FlagSet) (*strategicCmd, error) {
 		"[required] main package path \n(e.g. %s)", "github.com/dddplayer/dp"))
 	sCmd.pkgFlag = sCmd.cmd.String("p", "", fmt.Sprintf(
 		"[required] target package \n(e.g. %s)", "github.com/dddplayer/dp/internal/domain"))
+	sCmd.fastModeFlag = sCmd.cmd.Bool("fast", true, "analysis code in fast mode to save time")
+	sCmd.deepModeFlag = sCmd.cmd.Bool("deep", false, "analysis code in fast mode to get more accurate information")
 
 	err := sCmd.cmd.Parse(parent.Args()[1:])
 	if err != nil {
@@ -51,11 +53,15 @@ func (sc *strategicCmd) Run() error {
 		return errors.New("please specify a target package full name")
 	}
 
-	return strategicGraph(*sc.mainFlag, *sc.pkgFlag)
+	if *sc.deepModeFlag {
+		return strategicGraph(*sc.mainFlag, *sc.pkgFlag, true)
+	}
+
+	return strategicGraph(*sc.mainFlag, *sc.pkgFlag, false)
 }
 
-func strategicGraph(mainPkg, domain string) error {
-	dot, err := application.StrategicGraph(mainPkg, domain,
+func strategicGraph(mainPkg, domain string, deep bool) error {
+	dot, err := application.StrategicGraph(mainPkg, domain, deep,
 		persistence.NewRadixTree(),
 		&persistence.Relations{},
 	)
@@ -66,7 +72,7 @@ func strategicGraph(mainPkg, domain string) error {
 	if err = open(dot); err != nil {
 		return err
 	}
-	if err = writeToDisk(dot, strings.ReplaceAll(path.Join(domain, "detail"), "/", "."), mainPkg); err != nil {
+	if err = writeToDisk(dot, filename(domain, "strategic"), mainPkg); err != nil {
 		return err
 	}
 

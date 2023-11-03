@@ -8,7 +8,7 @@ import (
 	"github.com/dddplayer/dp/internal/domain/dot/factory"
 )
 
-func StrategicGraph(mainPkgPath, domain string,
+func StrategicGraph(mainPkgPath, domain string, deep bool,
 	objRepo repository.ObjectRepository,
 	relRepo repository.RelationRepository) (string, error) {
 
@@ -22,8 +22,14 @@ func StrategicGraph(mainPkgPath, domain string,
 		return "", err
 	}
 
-	if err := c.VisitDeep(arch.ObjectHandler()); err != nil {
-		return "", err
+	if deep {
+		if err := c.VisitDeep(arch.ObjectHandler()); err != nil {
+			return "", err
+		}
+	} else {
+		if err := c.VisitFast(arch.ObjectHandler()); err != nil {
+			return "", err
+		}
 	}
 
 	g, err := arch.StrategicGraph()
