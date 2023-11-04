@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"go/build"
 	"go/types"
+	"golang.org/x/exp/slices"
 	"golang.org/x/tools/go/callgraph"
 	"golang.org/x/tools/go/callgraph/cha"
 	"golang.org/x/tools/go/callgraph/rta"
@@ -393,6 +394,9 @@ func (golang *Go) CallGraph(linkCB code.LinkCB, mode code.CallGraphMode) error {
 		return err
 	}
 
+	extendEdges := make(map[string]*callgraph.Edge)
+	var extended []string
+
 	callGraph.DeleteSyntheticNodes()
 	err = callgraph.GraphVisitEdges(callGraph, func(edge *callgraph.Edge) error {
 		caller := edge.Caller
@@ -400,29 +404,82 @@ func (golang *Go) CallGraph(linkCB code.LinkCB, mode code.CallGraphMode) error {
 
 		if strings.Contains(caller.String(), golang.DomainPkgPath) &&
 			strings.Contains(callee.String(), golang.DomainPkgPath) {
+			golang.handleDomainCallGraphEdge(edge, linkCB)
 
-			if ignore(caller.Func.Name()) || ignore(callee.Func.Name()) {
-				return nil
-			}
-
-			if caller.Func.Pkg != nil && callee.Func.Pkg != nil {
-				callerNode := golang.functionNode(caller)
-				calleeNode := golang.functionNode(callee)
-
-				callerNode.Pos = valueobject.SsaInstructionPosition(caller.Func.Pkg, edge.Site)
-
-				linkCB(&code.Link{
-					From:     callerNode,
-					To:       calleeNode,
-					Relation: code.OneOne,
-				})
+		} else if strings.Contains(caller.String(), golang.DomainPkgPath) &&
+			strings.Contains(callee.String(), "(*net/http.ServeMux).HandleFunc") {
+			for _, v := range edge.Site.Common().Args {
+				if v.Type().String() == "func(w net/http.ResponseWriter, req *net/http.Request)" {
+					if va, ok := v.(*ssa.MakeClosure); ok {
+						closureName := va.Fn.Name()
+						// 去掉 $bound 部分
+						parts := strings.Split(closureName, "$")
+						if len(parts) > 0 {
+							closureName = parts[0]
+						}
+						extendEdges[closureName] = edge
+					}
+				}
 			}
 		}
 
 		return nil
 	})
 
+	if len(extendEdges) > 0 {
+		err = callgraph.GraphVisitEdges(callGraph, func(edge *callgraph.Edge) error {
+			caller := edge.Caller
+			callee := edge.Callee
+
+			if strings.Contains(caller.String(), golang.DomainPkgPath) &&
+				strings.Contains(callee.String(), golang.DomainPkgPath) {
+				for k, e := range extendEdges {
+					if strings.Contains(caller.String(), k) {
+						if slices.Contains(extended, k) {
+							continue
+						}
+						extended = append(extended, k)
+
+						golang.handleDomainCallGraphEdge(&callgraph.Edge{
+							Caller: e.Caller,
+							Site:   e.Site,
+							Callee: caller,
+						}, linkCB)
+					}
+				}
+			}
+
+			return nil
+		})
+	}
+
 	return err
+}
+
+func (golang *Go) handleDomainCallGraphEdge(edge *callgraph.Edge, linkCB code.LinkCB) {
+	caller := edge.Caller
+	callee := edge.Callee
+
+	if strings.Contains(caller.String(), golang.DomainPkgPath) &&
+		strings.Contains(callee.String(), golang.DomainPkgPath) {
+
+		if ignore(caller.Func.Name()) || ignore(callee.Func.Name()) {
+			return
+		}
+
+		if caller.Func.Pkg != nil && callee.Func.Pkg != nil {
+			callerNode := golang.functionNode(caller)
+			calleeNode := golang.functionNode(callee)
+
+			callerNode.Pos = valueobject.SsaInstructionPosition(caller.Func.Pkg, edge.Site)
+
+			linkCB(&code.Link{
+				From:     callerNode,
+				To:       calleeNode,
+				Relation: code.OneOne,
+			})
+		}
+	}
 }
 
 func ignore(funcName string) bool {

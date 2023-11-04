@@ -111,7 +111,7 @@ func getBuildInfo() *buildInfo {
 
 var CurrentVersion = Version{
 	Major:      0,
-	Minor:      3,
+	Minor:      4,
 	PatchLevel: 0,
 	Suffix:     "",
 }
