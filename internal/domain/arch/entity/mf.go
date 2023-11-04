@@ -24,6 +24,10 @@ func (mf *MessageFlow) newDirFilter() (*DirFilter, error) {
 	if n := mf.relationDigraph.FindNodeByKey(mf.mainFuncPath()); n != nil {
 		ps := mf.relationDigraph.FindPathsToPrefix(mf.mainFuncPath(), mf.endPkgPath)
 
+		if len(ps) == 0 {
+			return nil, errors.New("no path found")
+		}
+
 		validPkgs := make(map[string]bool)
 		objs := make([]arch.ObjIdentifier, 0, len(ps))
 		for _, p := range ps {
