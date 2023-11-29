@@ -68,7 +68,8 @@ func (arc *Arch) buildStrategicArchGraph() (*Diagram, error) {
 			return nil, err
 		}
 		if a.Entity == nil {
-			return nil, fmt.Errorf("aggregate %s has no entity", a.Name)
+			fmt.Printf("warn: strategic aggregate %s has no entity", a.Name)
+			continue
 		}
 
 		if err := g.AddObjTo(a, g.Name(), arch.RelationTypeAggregationRoot); err != nil {
@@ -169,7 +170,8 @@ func (arc *Arch) buildTacticArchGraph() (*Diagram, error) {
 			return nil, err
 		}
 		if a.Entity == nil {
-			return nil, fmt.Errorf("aggregate %s has no entity", a.Name)
+			fmt.Printf("warn: tactic aggregate %s has no entity", a.Name)
+			continue
 		}
 		if err := dm.addAggregateToDiagram(g, ag, a); err != nil {
 			return nil, err
