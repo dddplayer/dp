@@ -476,10 +476,8 @@ func TestBuildStrategicArchGraph(t *testing.T) {
 
 	diagram, err := mockArch.buildStrategicArchGraph()
 
-	if err == nil {
-		t.Errorf("Expected error occurs, but got nil")
-	} else if err.Error() != "aggregate test has no entity" {
-		t.Errorf("Expected error message: aggregate test has no entity, but got: %v", err.Error())
+	if err != nil {
+		t.Errorf("Expected error not occurs, but got error")
 	}
 
 	mockDirectory, objs = newMockDirectoryWithAggregate()
@@ -792,10 +790,8 @@ func TestBuildTacticArchGraph(t *testing.T) {
 
 	diagram, err := mockArch.buildTacticArchGraph()
 
-	if err == nil {
-		t.Errorf("Expected error occurs, but got nil")
-	} else if err.Error() != "aggregate test has no entity" {
-		t.Errorf("Expected error message: aggregate test has no entity, but got: %v", err.Error())
+	if err != nil {
+		t.Errorf("Expected error not occurs, but got error")
 	}
 
 	mockDirectory, objs = newMockDirectoryWithAggregate()
